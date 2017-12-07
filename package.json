@@ -1,0 +1,21 @@
+{
+  "name": "blockchain-explorer-backend",
+  "version": "1.0.0",
+  "description": "blockchain explorer backend",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "async": "^2.6.0",
+    "body-parser": "^1.9.2",
+    "cors": "^2.8.1",
+    "ethers": "^2.1.3",
+    "express": "^4.10.2",
+    "moment": "^2.18.1",
+    "mongoose": "^4.10.8",
+    "morgan": "^1.9.0"
+  },
+  "author": "Sayed Tauseef Naqvi",
+  "license": "ISC"
+}
