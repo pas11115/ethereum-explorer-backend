@@ -126,9 +126,3 @@ let getTransactions = () => {
 module.exports = {
     getTransactions: getTransactions,
 };
-// provider.getBlockNumber().then(function(blockNumber) {
-//     console.log("Current block number: " + blockNumber);
-// }).catch((error)=>{
-//     console.log("Get block number error: ");
-//     console.log(error)
-// });
