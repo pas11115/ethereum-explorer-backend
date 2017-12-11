@@ -3,8 +3,9 @@
  */
 let express = require("express");
 let router = express.Router();
-let transactionDeatils = require('./controllers/transactionDeatils');
+let transactionDetails = require('./controllers/transactionDetails');
 
-router.route('^/transactionDeatils$').post(transactionDeatils.transactionDeatils);
+router.route('^/transactionDetails$').post(transactionDetails.transactionDetails);
+router.route('^/tokenTransactionDetails$').post(transactionDetails.tokenTransactionDetails);
 
 module.exports = router;
