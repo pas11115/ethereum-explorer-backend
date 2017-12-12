@@ -14,8 +14,9 @@ const decoder = new InputDataDecoder(projectUtils.abi);
 
 let Account = require('../models/accountModel');
 let Configuration = require('./../models/configurationModel');
-
-let provider = new providers.JsonRpcProvider(config.rpcUrl, {chainId: 1});
+// let provider = new providers.JsonRpcProvider(config.rpcUrl,{chainId: 1});
+//change network for other chainId
+let provider = new providers.JsonRpcProvider(config.rpcUrl, network);
 
 let updateLastBlockNumber = (lastBlockNumber, callback) => {
     Configuration.findOneAndUpdate({key: "lastBlockNumber"}, {value: lastBlockNumber}, {upsert: true}, (err, result) => {
@@ -65,33 +66,23 @@ let getTokenDetails = (contractAddress, callback) => {
                                 standard: standard
                             })
                         }).catch((err) => {
-                            console.log("Error while getting token standard: ");
-                            console.log(err);
-                            return callback("Not a valid Erc20 token contract");
+                            return callback(err);
                         });
                     }).catch((err) => {
-                        console.log("Error while getting token owner: ");
-                        console.log(err);
-                        return callback("Not a valid Erc20 token contract");
+                        return callback(err);
                     });
                 }).catch((err) => {
-                    console.log("Error while getting token total supply: ");
-                    console.log(err);
-                    return callback("Not a valid Erc20 token contract");
+                    return callback(err);
                 });
             }).catch((err) => {
-                console.log("Error while getting token decimals: ");
-                console.log(err);
-                return callback("Not a valid Erc20 token contract");
+                return callback(err);
             });
         }).catch((err) => {
-            console.log("Error while getting token symbol: ");
-            console.log(err);
-            return callback("Not a valid Erc20 token contract");
+            return callback(err);
         });
     }).catch((err) => {
-        console.log("Error while getting token name: ");
-        console.log(err);
+        // console.log("Error while getting token name: ");
+        // console.log(err);
         return callback("Not a valid Erc20 token contract");
     });
 };
@@ -125,21 +116,21 @@ let getTransactions = () => {
                                             if (err)
                                                 console.log(err);
                                             if (oldTransaction.isErc20Token && oldTransaction.token) {
-                                                let tokenToAddress = "0x"+tokenTransactionData.inputs[0];
+                                                let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
                                                 let transactionValue = tokenTransactionData.inputs[1];
                                                 let update = {};
                                                 update.$addToSet = {
                                                     tokenTransactions: {
-                                                        tokenAddress : transaction.to,
-                                                        tokenSymbol : oldTransaction.token.symbol,
-                                                        decimals : oldTransaction.token.decimals,
+                                                        tokenAddress: transaction.to,
+                                                        tokenSymbol: oldTransaction.token.symbol,
+                                                        decimals: oldTransaction.token.decimals,
                                                         hash: transaction.hash,
                                                         from: transaction.from,
                                                         to: tokenToAddress,
                                                         value: transactionValue,
                                                         timestamp: timestamp * 1000,//timestamp in seconds convert into milliseconds
                                                         type: "out",
-                                                        isPending:false
+                                                        isPending: false
                                                     }
                                                 };
                                                 Account.findOneAndUpdate({address: transaction.from.toLowerCase()}, update, {
@@ -190,7 +181,7 @@ let getTransactions = () => {
                                         data: transaction.data,
                                         timestamp: timestamp * 1000,//timestamp in seconds convert into milliseconds
                                         type: "out",
-                                        isPending:false
+                                        isPending: false
                                     }
                                 };
 
@@ -205,7 +196,7 @@ let getTransactions = () => {
                                     /*console.log("transactionUpdateFrom: ");
                                     console.log(transactionUpdateFrom);*/
                                     update.$addToSet["transactions"].type = "in";
-                                    if(isContractCreation)
+                                    if (isContractCreation)
                                         update.isContract = true;
                                     Account.findOneAndUpdate({address: transaction.to.toLowerCase()}, update, {
                                         upsert: true, new: true
@@ -219,6 +210,8 @@ let getTransactions = () => {
                                         if (isContractCreation) {
                                             getTokenDetails(transactionReceipt.contractAddress, (err, token) => {
                                                 if (err) {
+                                                    if (err == "Not a valid Erc20 token contract")
+                                                        return next();
                                                     console.log("Error while getting token details: ");
                                                     console.log(err);
                                                     return next();
