@@ -66,19 +66,19 @@ let getTokenDetails = (contractAddress, callback) => {
                                 standard: standard
                             })
                         }).catch((err) => {
-                            return callback(err);
+                            return callback(contractAddress+" "+err);
                         });
                     }).catch((err) => {
-                        return callback(err);
+                        return callback(contractAddress+" "+err);
                     });
                 }).catch((err) => {
-                    return callback(err);
+                    return callback(contractAddress+" "+err);
                 });
             }).catch((err) => {
-                return callback(err);
+                return callback(contractAddress+" "+err);
             });
         }).catch((err) => {
-            return callback(err);
+            return callback(contractAddress+" "+err);
         });
     }).catch((err) => {
         // console.log("Error while getting token name: ");
@@ -115,7 +115,7 @@ let getTransactions = () => {
                                         Account.findOne({address: transaction.to.toLowerCase()}, (err, oldTransaction) => {
                                             if (err)
                                                 console.log(err);
-                                            if (oldTransaction.isErc20Token && oldTransaction.token) {
+                                            if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
                                                 let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
                                                 let transactionValue = tokenTransactionData.inputs[1];
                                                 let update = {};
