@@ -66,19 +66,19 @@ let getTokenDetails = (contractAddress, callback) => {
                                 standard: standard
                             })
                         }).catch((err) => {
-                            return callback(contractAddress+" "+err);
+                            return callback(contractAddress+" in standard "+err);
                         });
                     }).catch((err) => {
-                        return callback(contractAddress+" "+err);
+                        return callback(contractAddress+" in owner "+err);
                     });
                 }).catch((err) => {
-                    return callback(contractAddress+" "+err);
+                    return callback(contractAddress+" in totalSupply "+err);
                 });
             }).catch((err) => {
-                return callback(contractAddress+" "+err);
+                return callback(contractAddress+" in decimals "+err);
             });
         }).catch((err) => {
-            return callback(contractAddress+" "+err);
+            return callback(contractAddress+" in symbol "+err);
         });
     }).catch((err) => {
         // console.log("Error while getting token name: ");
