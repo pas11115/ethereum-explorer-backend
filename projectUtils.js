@@ -148,11 +148,11 @@ module.exports.getPendingTransactions = (address, isToken, callback) => {
                     let tokenTransactionData = decoder.decodeData(transaction.input);
                     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name == 'transfer' : false) {
                         Account.findOne({address: transaction.to.toLowerCase()}, (err, oldTransaction) => {
-                            if (err){
+                            if (err) {
                                 console.log(err);
                                 next(err)
                             }
-                            if (oldTransaction.isErc20Token && oldTransaction.token) {
+                            if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token : false && oldTransaction.token) {
                                 let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
                                 let transactionValue = tokenTransactionData.inputs[1];
                                 let tokenTransactionObj = {

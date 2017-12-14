@@ -44,59 +44,38 @@ function lastBlockNumber(cb) {
 
 let getTokenDetails = (contractAddress, callback) => {
     let contract = new ethers.Contract(contractAddress, projectUtils.abi, provider);
-    contract.name().then(function (name) {
-        contract.symbol().then(function (symbol) {
-            contract.decimals().then(function (decimals) {
-                contract.totalSupply().then(function (totalSupply) {
-                    contract.owner().then(function (owner) {
-                        contract.standard().then(function (standard) {
-                            // console.log("Name of token: " + name);
-                            // console.log("Symbol of token: " + symbol);
-                            // console.log("Decimals of token: " + decimals);
-                            // console.log("Total supply of token: " + utils.formatEther(totalSupply.toString()));
-                            // console.log("Owner of token: " + owner);
-                            // console.log("Standard of token: " + standard);
 
-                            return callback(null, {
-                                name: name,
-                                symbol: symbol,
-                                decimals: decimals,
-                                totalSupply: totalSupply,
-                                owner: owner,
-                                standard: standard
-                            })
-                        }).catch((err) => {
-                            return callback(contractAddress+" in standard "+err);
-                        });
-                    }).catch((err) => {
-                        return callback(contractAddress+" in owner "+err);
-                    });
-                }).catch((err) => {
-                    return callback(contractAddress+" in totalSupply "+err);
-                });
-            }).catch((err) => {
-                return callback(contractAddress+" in decimals "+err);
-            });
-        }).catch((err) => {
-            return callback(contractAddress+" in symbol "+err);
+    let token = {};
+    contract.name()
+        .then(function (name) {
+            token.name = name;
+            return contract.symbol();
+        })
+        .then(function (symbol) {
+            token.symbol = symbol;
+            return contract.decimals();
+        })
+        .then(function (decimals) {
+            token.decimals = decimals;
+            return contract.totalSupply()
+        }).then(function (totalSupply) {
+        token.totalSupply = totalSupply;
+        return contract.owner()
+        })
+        .then(function (owner) {
+            token.owner = owner;
+            return contract.standard()
+        })
+        .then(function (standard) {
+            token.standard = standard;
+            return callback(null, token);
+        })
+        .catch((err) => {
+            return callback(contractAddress + err);
         });
-    }).catch((err) => {
-        // console.log("Error while getting token name: ");
-        // console.log(err);
-        return callback("Not a valid Erc20 token contract");
-    });
 };
 
 let getTransactions = () => {
-    // provider.getBlock("pending").then(function (blockNumber) {
-    //     console.log("Current block number: " + blockNumber);
-    // });
-    // provider.getTransactionCount("0xbe76Bc7079B2207932705594bA4F8e5a1BA7545F").then(function (transactionCount) {
-    //     console.log("Total Transactions Ever Send: " + transactionCount);
-    // });
-    // provider.getTransactionCount("0xbe76Bc7079B2207932705594bA4F8e5a1BA7545F", 'pending').then(function (transactionCount) {
-    //     console.log("Total Transactions Ever Send: " + transactionCount);
-    // });
     lastBlockNumber(function (blockNumber) {
         blockNumber = Number(blockNumber);
         provider.getBlock(blockNumber)
@@ -109,8 +88,11 @@ let getTransactions = () => {
                         provider.getTransactionReceipt(transactionHash).then(function (transactionReceipt) {
                             provider.getTransaction(transactionHash).then(function (transaction) {
 
-                                if (transaction.data != "0x" && !transaction.contractAddress && transaction.to) {
+                                // check transaction data not empty and not contact deployment and have 'to' address
+                                if (transaction.data !== "0x" && !transaction.contractAddress && transaction.to) {
+                                    //decode transaction data to check transfer function exits
                                     let tokenTransactionData = decoder.decodeData(transaction.data);
+                                    //check decoded data name is transfer or not
                                     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name == 'transfer' : false) {
                                         Account.findOne({address: transaction.to.toLowerCase()}, (err, oldTransaction) => {
                                             if (err)
