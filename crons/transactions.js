@@ -42,7 +42,6 @@ function latestBlockNumber(cb) {
             console.log("Error while finding last block number: ");
             console.log(err);
         }
-        console.log("get latest block number:- "+Object.keys(result).length?result.value:0);
         if (result)
             return cb(Number(result.value));
         else
