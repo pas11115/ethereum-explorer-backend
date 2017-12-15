@@ -61,7 +61,7 @@ let getTokenDetails = (contractAddress, callback) => {
         }).then(function (totalSupply) {
         token.totalSupply = totalSupply;
         return contract.owner()
-        })
+    })
         .then(function (owner) {
             token.owner = owner;
             return contract.standard()
@@ -75,69 +75,85 @@ let getTokenDetails = (contractAddress, callback) => {
         });
 };
 
+let findTokenTransactionsFromData = (transaction, blockTimestamp, callback) => {
+    //decode transaction data to check transfer function exits
+    let tokenTransactionData = decoder.decodeData(transaction.data);
+    //check decoded data name is transfer or not
+    if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name === 'transfer' : false) {
+        Account.findOne({address: transaction.to.toLowerCase()}, (err, oldTransaction) => {
+            if (err)
+                return callback(err);
+            if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
+                let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
+                let transactionValue = tokenTransactionData.inputs[1];
+                let update = {};
+                update.$addToSet = {
+                    tokenTransactions: {
+                        tokenAddress: transaction.to,
+                        tokenSymbol: oldTransaction.token.symbol,
+                        decimals: oldTransaction.token.decimals,
+                        hash: transaction.hash,
+                        from: transaction.from,
+                        to: tokenToAddress,
+                        value: transactionValue,
+                        timestamp: blockTimestamp * 1000,//timestamp in seconds convert into milliseconds
+                        type: "out",
+                        isPending: false
+                    }
+                };
+                Account.findOneAndUpdate({address: transaction.from.toLowerCase()}, update, {
+                    upsert: true,
+                    new: true
+                }, (err, tokenTransUpdateFrom) => {
+                    if (err) {
+                        console.log("Error while updating token transaction from address: ");
+                        return callback(err);
+                    }
+                    update.$addToSet["tokenTransactions"].type = "in";
+                    Account.findOneAndUpdate({address: tokenToAddress.toLowerCase()}, update, {
+                        upsert: true,
+                        new: true
+                    }, (err, tokenTransUpdateTo) => {
+                        if (err) {
+                            console.log("Error while updating token transaction from address: ");
+                            return callback(err);
+                        }
+                    })
+                })
+            }
+        })
+    }
+};
+
 let getTransactions = () => {
+    let inGetTransactions = Date.now();
     lastBlockNumber(function (blockNumber) {
+        console.log("in lastBlockNumber taking - "+inGetTransactions-Date.now()+" milliseconds");
         blockNumber = Number(blockNumber);
         provider.getBlock(blockNumber)
             .then(function (block) {
+                console.log("in provider.getBlock taking - "+inGetTransactions-Date.now()+" milliseconds");
                 if (!block)
                     throw 'No Block found';
                 let timestamp = block.timestamp;
                 if (block.transactions.length) {
+                    console.log("Transaction found in "+blockNumber+" block");
                     async.eachSeries(block.transactions, function (transactionHash, next) {
+                        console.log("in async.eachSeries taking - "+inGetTransactions-Date.now()+" milliseconds");
                         provider.getTransactionReceipt(transactionHash).then(function (transactionReceipt) {
+                            console.log("in provider.getTransactionReceipt taking - "+inGetTransactions-Date.now()+" milliseconds");
                             provider.getTransaction(transactionHash).then(function (transaction) {
-
+                                console.log("in provider.getTransaction taking - "+inGetTransactions-Date.now()+" milliseconds");
+                                // check transaction data for update token transactions
                                 // check transaction data not empty and not contact deployment and have 'to' address
-                                if (transaction.data !== "0x" && !transaction.contractAddress && transaction.to) {
-                                    //decode transaction data to check transfer function exits
-                                    let tokenTransactionData = decoder.decodeData(transaction.data);
-                                    //check decoded data name is transfer or not
-                                    if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name == 'transfer' : false) {
-                                        Account.findOne({address: transaction.to.toLowerCase()}, (err, oldTransaction) => {
-                                            if (err)
-                                                console.log(err);
-                                            if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
-                                                let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
-                                                let transactionValue = tokenTransactionData.inputs[1];
-                                                let update = {};
-                                                update.$addToSet = {
-                                                    tokenTransactions: {
-                                                        tokenAddress: transaction.to,
-                                                        tokenSymbol: oldTransaction.token.symbol,
-                                                        decimals: oldTransaction.token.decimals,
-                                                        hash: transaction.hash,
-                                                        from: transaction.from,
-                                                        to: tokenToAddress,
-                                                        value: transactionValue,
-                                                        timestamp: timestamp * 1000,//timestamp in seconds convert into milliseconds
-                                                        type: "out",
-                                                        isPending: false
-                                                    }
-                                                };
-                                                Account.findOneAndUpdate({address: transaction.from.toLowerCase()}, update, {
-                                                    upsert: true,
-                                                    new: true
-                                                }, (err, tokenTransUpdateFrom) => {
-                                                    if (err) {
-                                                        console.log("Error while updating token transaction from address: ");
-                                                        console.log(err);
-                                                    }
-                                                    update.$addToSet["tokenTransactions"].type = "in";
-                                                    Account.findOneAndUpdate({address: tokenToAddress.toLowerCase()}, update, {
-                                                        upsert: true,
-                                                        new: true
-                                                    }, (err, tokenTransUpdateTo) => {
-                                                        if (err) {
-                                                            console.log("Error while updating token transaction from address: ");
-                                                            console.log(err);
-                                                        }
-                                                    })
-                                                })
-                                            }
-                                        })
-                                    }
-                                }
+                                if (transaction.data !== "0x" && !transaction.contractAddress && transaction.to)
+                                    findTokenTransactionsFromData(transaction,timestamp,(err)=>{
+                                        console.log("in findTokenTransactionFromData taking - "+inGetTransactions-Date.now()+" milliseconds");
+
+                                        if(err)
+                                            console.log(err);
+                                    });
+
                                 let gasPrice = utils.formatEther(utils.bigNumberify(transaction.gasPrice));
                                 let txtFee = gasPrice * transactionReceipt.gasUsed;
                                 let isContractCreation = false;
@@ -171,6 +187,8 @@ let getTransactions = () => {
                                     upsert: true,
                                     new: true
                                 }, (err, transactionUpdateFrom) => {
+                                    console.log("in findOneAndUpdate of from address taking - "+inGetTransactions-Date.now()+" milliseconds");
+
                                     if (err) if (err) {
                                         console.log("Error while updating transaction from address: ");
                                         console.log(err);
@@ -183,6 +201,8 @@ let getTransactions = () => {
                                     Account.findOneAndUpdate({address: transaction.to.toLowerCase()}, update, {
                                         upsert: true, new: true
                                     }, (err, transactionUpdateTo) => {
+                                        console.log("in findOneAndUpdate of to address taking - "+inGetTransactions-Date.now()+" milliseconds");
+
                                         if (err) {
                                             console.log("Error while updating transaction to address: ");
                                             console.log(err);
@@ -225,6 +245,8 @@ let getTransactions = () => {
                             console.log(error);
                         blockNumber++;
                         updateLastBlockNumber(blockNumber, (err) => {
+                            console.log("in updateLastBlock and call recursive fn taking - "+inGetTransactions-Date.now()+" milliseconds");
+
                             if (err)
                                 console.log(err);
                             getTransactions();
@@ -238,18 +260,20 @@ let getTransactions = () => {
                             console.log(err);
                         getTransactions();
                     });
-                    // console.log("No transaction found in this block.");
                 }
             })
             .catch((error) => {
-                if (error == 'No Block found')
+                if (error === 'No Block found')
                     setTimeout(function () {
                         getTransactions();
                         console.log("Block number " + blockNumber + " not found retry....");
                     }, 10000);
                 else {
                     console.log("Get block details error: ");
-                    console.log(error)
+                    console.log(error);
+                    setTimeout(function () {
+                        getTransactions();
+                    }, 10000);
                 }
             });
     });
