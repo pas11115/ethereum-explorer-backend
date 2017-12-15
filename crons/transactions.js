@@ -183,7 +183,7 @@ let getTransactions = () => {
                                     }
                                 };
 
-                                Account.findOneAndUpdate({address: transaction.from.toLowerCase()}, update, {
+                                Account.update({address: transaction.from.toLowerCase()}, update, {
                                     upsert: true,
                                     new: true
                                 }, (err, transactionUpdateFrom) => {
@@ -198,7 +198,7 @@ let getTransactions = () => {
                                     update.$addToSet["transactions"].type = "in";
                                     if (isContractCreation)
                                         update.isContract = true;
-                                    Account.findOneAndUpdate({address: transaction.to.toLowerCase()}, update, {
+                                    Account.update({address: transaction.to.toLowerCase()}, update, {
                                         upsert: true, new: true
                                     }, (err, transactionUpdateTo) => {
                                         console.log("in findOneAndUpdate of to address taking: "+(Date.now()-inGetTransactions)+" milliseconds");
