@@ -128,27 +128,27 @@ let findTokenTransactionsFromData = (transaction, blockTimestamp, callback) => {
 let getTransactions = () => {
     let inGetTransactions = Date.now();
     lastBlockNumber(function (blockNumber) {
-        console.log("in lastBlockNumber taking - "+(inGetTransactions-Date.now())+" milliseconds");
+        console.log("in lastBlockNumber taking - "+(Date.now()-inGetTransactions)+" milliseconds");
         blockNumber = Number(blockNumber);
         provider.getBlock(blockNumber)
             .then(function (block) {
-                console.log("in provider.getBlock taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                console.log("in provider.getBlock taking: "+(Date.now()-inGetTransactions)+" milliseconds");
                 if (!block)
                     throw 'No Block found';
                 let timestamp = block.timestamp;
                 if (block.transactions.length) {
                     console.log("Transaction found in "+blockNumber+" block");
                     async.eachSeries(block.transactions, function (transactionHash, next) {
-                        console.log("in async.eachSeries taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                        console.log("in async.eachSeries taking: "+(Date.now()-inGetTransactions)+" milliseconds");
                         provider.getTransactionReceipt(transactionHash).then(function (transactionReceipt) {
-                            console.log("in provider.getTransactionReceipt taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                            console.log("in provider.getTransactionReceipt taking: "+(Date.now()-inGetTransactions)+" milliseconds");
                             provider.getTransaction(transactionHash).then(function (transaction) {
-                                console.log("in provider.getTransaction taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                                console.log("in provider.getTransaction taking: "+(Date.now()-inGetTransactions)+" milliseconds");
                                 // check transaction data for update token transactions
                                 // check transaction data not empty and not contact deployment and have 'to' address
                                 if (transaction.data !== "0x" && !transaction.contractAddress && transaction.to)
                                     findTokenTransactionsFromData(transaction,timestamp,(err)=>{
-                                        console.log("in findTokenTransactionFromData taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                                        console.log("in findTokenTransactionFromData taking: "+(Date.now()-inGetTransactions)+" milliseconds");
 
                                         if(err)
                                             console.log(err);
@@ -187,7 +187,7 @@ let getTransactions = () => {
                                     upsert: true,
                                     new: true
                                 }, (err, transactionUpdateFrom) => {
-                                    console.log("in findOneAndUpdate of from address taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                                    console.log("in findOneAndUpdate of from address taking: "+(Date.now()-inGetTransactions)+" milliseconds");
 
                                     if (err) if (err) {
                                         console.log("Error while updating transaction from address: ");
@@ -201,7 +201,7 @@ let getTransactions = () => {
                                     Account.findOneAndUpdate({address: transaction.to.toLowerCase()}, update, {
                                         upsert: true, new: true
                                     }, (err, transactionUpdateTo) => {
-                                        console.log("in findOneAndUpdate of to address taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                                        console.log("in findOneAndUpdate of to address taking: "+(Date.now()-inGetTransactions)+" milliseconds");
 
                                         if (err) {
                                             console.log("Error while updating transaction to address: ");
@@ -212,7 +212,7 @@ let getTransactions = () => {
                                         if (isContractCreation) {
                                             getTokenDetails(transactionReceipt.contractAddress, (err, token) => {
                                                 if (err) {
-                                                    if (err == "Not a valid Erc20 token contract")
+                                                    if (err === "Not a valid Erc20 token contract")
                                                         return next();
                                                     console.log("Error while getting token details: ");
                                                     console.log(err);
@@ -245,7 +245,7 @@ let getTransactions = () => {
                             console.log(error);
                         blockNumber++;
                         updateLastBlockNumber(blockNumber, (err) => {
-                            console.log("in updateLastBlock and call recursive fn taking - "+(inGetTransactions-Date.now())+" milliseconds");
+                            console.log("in updateLastBlock and call recursive fn taking: "+(Date.now()-inGetTransactions)+" milliseconds");
 
                             if (err)
                                 console.log(err);
@@ -254,6 +254,7 @@ let getTransactions = () => {
                     });
                 }
                 else {
+                    console.log("Transaction not found in "+blockNumber+" block");
                     blockNumber++;
                     updateLastBlockNumber(blockNumber, (err) => {
                         if (err)
