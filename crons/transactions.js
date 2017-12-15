@@ -31,7 +31,6 @@ let updateLastBlockNumber = (latestBlockNumber, callback) => {
             console.log(err);
             return callback(err);
         }
-        console.log("update last block result:- "+result.value);
         callback(null)
     })
 };
@@ -87,7 +86,7 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
     let tokenTransactionData = decoder.decodeData(transaction.data);
     //check decoded data name is transfer or not
     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name === 'transfer' : false) {
-        Transaction.findOne({to: '/^' + transaction.to + '$/i', isErc20Token: true})
+        Transaction.findOne({to: new RegExp(transaction.to, "i"), isErc20Token: true})
             .then((oldTransaction) => {
                 if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
                     let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
@@ -202,7 +201,6 @@ function customWeb3GetBlock(blockNumber) {
 
         setTimeout(function () {
             if(!finished) {
-                console.log('Web3 Timeout for:'+blockNumber);
                 reject('Web3 Timeout');
             }
         },1000);
@@ -213,11 +211,9 @@ function customWeb3GetBlock(blockNumber) {
 
 let getTransactions = () => {
     latestBlockNumber(function (blockNumber) {
-        console.log("call web3 to get details of block numer:- "+blockNumber);
         //get all transaction details of this block with block details
         customWeb3GetBlock(blockNumber)
             .then(function (block) {
-                console.log('Inside Web3 Get Block:'+block.number);
                 if (!block)
                     throw 'No Block found';
 
