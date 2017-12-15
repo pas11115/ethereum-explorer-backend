@@ -88,23 +88,24 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name === 'transfer' : false) {
         Transaction.findOne({to: new RegExp(transaction.to, "i"), isErc20Token: true})
             .then((oldTransaction) => {
-                if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
-                    let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
-                    let transactionValue = tokenTransactionData.inputs[1];
+                if (oldTransaction)
+                    if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
+                        let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
+                        let transactionValue = tokenTransactionData.inputs[1];
 
-                    let newTokenTransaction = new TokenTransaction({
-                        hash: transaction.hash,
-                        blockNumber: transaction.blockNumber,
-                        tokenAddress: transaction.to,
-                        tokenSymbol: oldTransaction.token.symbol,
-                        decimals: oldTransaction.token.decimals,
-                        from: transaction.from,
-                        to: tokenToAddress,
-                        value: transactionValue,
-                        timestamp: timestamp
-                    });
-                    return newTokenTransaction.save()
-                }
+                        let newTokenTransaction = new TokenTransaction({
+                            hash: transaction.hash,
+                            blockNumber: transaction.blockNumber,
+                            tokenAddress: transaction.to,
+                            tokenSymbol: oldTransaction.token.symbol,
+                            decimals: oldTransaction.token.decimals,
+                            from: transaction.from,
+                            to: tokenToAddress,
+                            value: transactionValue,
+                            timestamp: timestamp
+                        });
+                        return newTokenTransaction.save()
+                    }
             }).then((result) => {
             console.log(result)
         }).catch((err) => {
@@ -188,11 +189,11 @@ let getTransactionFromBlock = (block, callback) => {
 
 function customWeb3GetBlock(blockNumber) {
 
-    return new Promise(function (resolve,reject) {
-        let finished=false;
-        web3.eth.getBlock(blockNumber,true)
+    return new Promise(function (resolve, reject) {
+        let finished = false;
+        web3.eth.getBlock(blockNumber, true)
             .then(function (block) {
-                finished=true;
+                finished = true;
                 resolve(block);
             })
             .catch(function (err) {
@@ -200,10 +201,10 @@ function customWeb3GetBlock(blockNumber) {
             });
 
         setTimeout(function () {
-            if(!finished) {
+            if (!finished) {
                 reject('Web3 Timeout');
             }
-        },1000);
+        }, 1000);
 
     })
 }
@@ -232,7 +233,7 @@ let getTransactions = () => {
             })
             .catch((error) => {
 
-                if(error === 'Web3 Timeout')
+                if (error === 'Web3 Timeout')
                     return getTransactions();
                 if (error === 'No Block found')
                     return setTimeout(function () {
