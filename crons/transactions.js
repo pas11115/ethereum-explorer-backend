@@ -107,9 +107,8 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
                         return newTokenTransaction.save()
                     }
             }).then((result) => {
-            console.log(result)
+            // console.log(result)
         }).catch((err) => {
-            console.log(err);
             return callback(err)
         })
     }
@@ -126,8 +125,10 @@ let getTransactionFromBlock = (block, callback) => {
             // check transaction data not empty and not contact deployment and have 'to' address
             if (transaction.input !== "0x" && !transaction.contractAddress && transaction.to)
                 findTokenTransactionsFromData(transaction, timestamp, (err) => {
-                    if (err)
+                    if (err){
+                        console.log("Error in indTokenTransactions fn catch.");
                         console.log(err);
+                    }
                 });
 
             let gasPrice = transaction.gasPrice;
@@ -157,8 +158,10 @@ let getTransactionFromBlock = (block, callback) => {
             });
             if (!isContractCreation)
                 return newTransaction.save((err, result) => {
-                    if (err)
+                    if (err){
+                        console.log("Error while saving new Transaction.");
                         console.log(err);
+                    }
                     next()
                 });
             getTokenDetails(transactionReceipt.contractAddress, (err, token) => {
@@ -170,8 +173,10 @@ let getTransactionFromBlock = (block, callback) => {
                 newTransaction.isErc20Token = true;
                 newTransaction.token = token;
                 newTransaction.save((err, result) => {
-                    if (err)
+                    if (err){
+                        console.log("Error while saving new Transaction with isErc20Token.");
                         console.log(err);
+                    }
                     next()
                 })
             });
@@ -181,8 +186,10 @@ let getTransactionFromBlock = (block, callback) => {
             next();
         });
     }, function (error) {
-        if (error)
+        if (error){
+            console.log("Error in async.eachSeries fn .");
             console.log(error);
+        }
         return callback()
     });
 };
