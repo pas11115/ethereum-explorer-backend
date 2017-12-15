@@ -45,9 +45,7 @@ let accountSchema = new Schema({
         from: {type: String},
         to: {type: String},
         value: {type: String},
-        timestamp: {type: Date},
-        type: {type: String}, //type in/out for type of transaction
-        isPending:{type:Boolean}
+        timestamp: {type: Date}
     }]
 });
 
