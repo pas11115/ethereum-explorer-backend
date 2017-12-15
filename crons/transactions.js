@@ -83,7 +83,7 @@ let getTokenDetails = (contractAddress, callback) => {
 
 let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
     //decode transaction data to check transfer function exits
-    let tokenTransactionData = decoder.decodeData(transaction.data);
+    let tokenTransactionData = decoder.decodeData(transaction.input);
     //check decoded data name is transfer or not
     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name === 'transfer' : false) {
         Transaction.findOne({to: new RegExp(transaction.to, "i"), isErc20Token: true})
@@ -123,7 +123,7 @@ let getTransactionFromBlock = (block, callback) => {
 
             // check transaction data for update token transactions
             // check transaction data not empty and not contact deployment and have 'to' address
-            if (transaction.data !== "0x" && !transaction.contractAddress && transaction.to)
+            if (transaction.input !== "0x" && !transaction.contractAddress && transaction.to)
                 findTokenTransactionsFromData(transaction, timestamp, (err) => {
                     if (err)
                         console.log(err);
@@ -151,7 +151,7 @@ let getTransactionFromBlock = (block, callback) => {
                 gasPrice: transaction.gasPrice,
                 txtFee: txtFee,
                 nonce: transaction.nonce,
-                data: transaction.data,
+                data: transaction.input,
                 isContractCreation: isContractCreation,
             });
             if (!isContractCreation)
