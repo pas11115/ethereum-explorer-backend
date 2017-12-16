@@ -8,7 +8,6 @@ web3 = new web3(new web3.providers.HttpProvider(config.rpcUrl));
 const async = require('async');
 const ethers = require('ethers');
 const utils = ethers.utils;
-const Account = require('./models/accountModel');
 const InputDataDecoder = require('ethereum-input-data-decoder');
 
 module.exports.abi = abi = [{

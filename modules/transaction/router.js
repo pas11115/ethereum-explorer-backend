@@ -3,11 +3,11 @@
  */
 let express = require("express");
 let router = express.Router();
-let transactionDetails = require('./controllers/transactionDetails');
+let transactionHistory = require('./controllers/transactionHistory');
 
 //post api to get all transactions of a address
-router.route('^/transactionDetails$').post(transactionDetails.transactionDetails);
+router.route('^/transactionHistory').post(transactionHistory.transactionHistory);
 //post api to get all token transactions of a address
-router.route('^/tokenTransactionDetails$').post(transactionDetails.tokenTransactionDetails);
+router.route('^/tokenTransactionHistory$').post(transactionHistory.tokenTransactionHistory);
 
 module.exports = router;

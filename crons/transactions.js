@@ -266,5 +266,5 @@ let getTransactions = () => {
     });
 };
 module.exports = {
-    getTransactions: getTransactions,
+    getTransactions,
 };
