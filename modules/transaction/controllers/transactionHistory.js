@@ -24,25 +24,24 @@ let transactionHistory = (req, res) => {
     //find 'from' transactions of address
     Transaction.find({from: new RegExp(address, "i")}).lean()
         .then((fromTransactions) => {
-            if (!fromTransactions.length) {
-                res.json({success: true, transactions: allTransactions});
-                throw 'Returned';
-            }
-
+            if (!fromTransactions.length)
+                return "No transaction in from";
             //type:out inject in 'from' all transactions
             return projectUtils.injectKeyValueInArray(fromTransactions, {type: 'out', isPending: false})
         })
         .then((outTransactions) => {
-            allTransactions = outTransactions;
+            if (outTransactions !== "No transaction in from")
+                allTransactions = outTransactions;
             //find 'to' transactions of address
-            return Transaction.find({to: new RegExp(address, "i")}).lean();
+            return TokenTransaction.find({to: new RegExp(address, "i")}).lean();
         })
         .then((toTransactions) => {
             if (!toTransactions.length) {
                 // sort transactions in descending order of timestamp
-                allTransactions = allTransactions.sort(function (a, b) {
-                    return new Date(b.timestamp) - new Date(a.timestamp);
-                });
+                if (allTransactions.length)
+                    allTransactions = allTransactions.sort(function (a, b) {
+                        return new Date(b.timestamp) - new Date(a.timestamp);
+                    });
                 res.json({success: true, transactions: allTransactions});
                 throw 'Returned';
             }
@@ -80,24 +79,24 @@ let tokenTransactionHistory = (req, res) => {
     //find 'from' transactions of address
     TokenTransaction.find({from: new RegExp(address, "i")}).lean()
         .then((fromTransactions) => {
-            if (!fromTransactions.length){
-                res.json({success: true, transactions: allTransactions});
-                throw 'Returned';
-            }
+            if (!fromTransactions.length)
+                return "No transaction in from";
             //type:out inject in 'from' all transactions
             return projectUtils.injectKeyValueInArray(fromTransactions, {type: 'out', isPending: false})
         })
         .then((outTransactions) => {
-            allTransactions = outTransactions;
+            if (outTransactions !== "No transaction in from")
+                allTransactions = outTransactions;
             //find 'to' transactions of address
             return TokenTransaction.find({to: new RegExp(address, "i")}).lean();
         })
         .then((toTransactions) => {
             if (!toTransactions.length) {
                 // sort transactions in descending order of timestamp
-                allTransactions = allTransactions.sort(function (a, b) {
-                    return new Date(b.timestamp) - new Date(a.timestamp);
-                });
+                if (allTransactions.length)
+                    allTransactions = allTransactions.sort(function (a, b) {
+                        return new Date(b.timestamp) - new Date(a.timestamp);
+                    });
                 res.json({success: true, transactions: allTransactions});
                 throw 'Returned';
             }
@@ -114,7 +113,7 @@ let tokenTransactionHistory = (req, res) => {
         })
         .catch((error) => {
             if (error !== 'Returned')
-            return res.json({success: false, msg: "Error while getting token transactions.", error: error.message});
+                return res.json({success: false, msg: "Error while getting token transactions.", error: error.message});
         });
 };
 
