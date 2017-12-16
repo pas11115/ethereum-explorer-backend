@@ -9,7 +9,6 @@ const async = require('async');
 const InputDataDecoder = require('ethereum-input-data-decoder');
 const projectUtils = require('./../projectUtils');
 const providers = ethers.providers;
-const Contract = ethers.Contract;
 const utils = ethers.utils;
 const network = providers.networks.ropsten;
 const decoder = new InputDataDecoder(projectUtils.abi);
@@ -21,38 +20,39 @@ let Configuration = require('./../models/configurationModel');
 //change network for other chainId
 let provider = new providers.JsonRpcProvider(config.rpcUrl, network);
 
+//update last block number in db
 let updateLastBlockNumber = (latestBlockNumber, callback) => {
     Configuration.findOneAndUpdate({key: "latestBlockNumber"}, {value: latestBlockNumber}, {
         new: true,
         upsert: true
     }, (err, result) => {
-        if (err) {
-            console.log("Error while updating latest block number: ");
-            console.log(err);
+        if (err)
             return callback(err);
-        }
         callback(null)
     })
 };
 
-function latestBlockNumber(cb) {
+//find last updated block number in db
+let latestBlockNumber = (cb) => {
     Configuration.findOne({key: "latestBlockNumber"}, (err, result) => {
-        if (err) {
-            console.log("Error while finding last block number: ");
+        if (err)
             console.log(err);
-        }
         if (result)
             return cb(Number(result.value));
-        else
-            return cb(1);
+        cb(1);
     });
-}
+};
 
+// check and find token details from contract address
 let getTokenDetails = (contractAddress, callback) => {
     let contract = new ethers.Contract(contractAddress, projectUtils.abi, provider);
 
     let token = {};
-    contract.name()
+    //sample eth address to check contract have valid balanceOf function
+    contract.balanceOf('0xCF4eE917014309655b1f4055861a45782403127d')
+        .then(function () {
+            return contract.name();
+        })
         .then(function (name) {
             token.name = name;
             return contract.symbol();
@@ -64,16 +64,9 @@ let getTokenDetails = (contractAddress, callback) => {
         .then(function (decimals) {
             token.decimals = decimals;
             return contract.totalSupply()
-        }).then(function (totalSupply) {
-        token.totalSupply = totalSupply;
-        return contract.owner()
-    })
-        .then(function (owner) {
-            token.owner = owner;
-            return contract.standard()
         })
-        .then(function (standard) {
-            token.standard = standard;
+        .then(function (totalSupply) {
+            token.totalSupply = totalSupply;
             return callback(null, token);
         })
         .catch((err) => {
@@ -81,9 +74,12 @@ let getTokenDetails = (contractAddress, callback) => {
         });
 };
 
+//find token transaction details from data/input parameter of transaction and update token transaction
 let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
+
     //decode transaction data to check transfer function exits
     let tokenTransactionData = decoder.decodeData(transaction.input);
+
     //check decoded data name is transfer or not
     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name === 'transfer' : false) {
         Transaction.findOne({to: new RegExp(transaction.to, "i"), isErc20Token: true})
@@ -114,7 +110,9 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
     }
 };
 
+//get all transaction details from block and update in db
 let getTransactionFromBlock = (block, callback) => {
+
     //timestamp in seconds convert into milliseconds
     let timestamp = Number(block.timestamp) * 1000;
 
@@ -125,8 +123,8 @@ let getTransactionFromBlock = (block, callback) => {
             // check transaction data not empty and not contact deployment and have 'to' address
             if (transaction.input !== "0x" && !transaction.contractAddress && transaction.to)
                 findTokenTransactionsFromData(transaction, timestamp, (err) => {
-                    if (err){
-                        console.log("Error in indTokenTransactions fn catch.");
+                    if (err) {
+                        console.log("Error in findTokenTransactions:- ");
                         console.log(err);
                     }
                 });
@@ -158,22 +156,23 @@ let getTransactionFromBlock = (block, callback) => {
             });
             if (!isContractCreation)
                 return newTransaction.save((err, result) => {
-                    if (err){
+                    if (err) {
                         console.log("Error while saving new Transaction.");
                         console.log(err);
                     }
                     next()
                 });
+            //call token details function to update token details
             getTokenDetails(transactionReceipt.contractAddress, (err, token) => {
                 if (err) {
-                    console.log("Error while getting token details: ");
-                    console.log(err);
+                    // console.log("Error while getting token details: ");
+                    // console.log(err);
                     return next();
                 }
                 newTransaction.isErc20Token = true;
                 newTransaction.token = token;
                 newTransaction.save((err, result) => {
-                    if (err){
+                    if (err) {
                         console.log("Error while saving new Transaction with isErc20Token.");
                         console.log(err);
                     }
@@ -186,16 +185,16 @@ let getTransactionFromBlock = (block, callback) => {
             next();
         });
     }, function (error) {
-        if (error){
-            console.log("Error in async.eachSeries fn .");
+        if (error) {
+            console.log("Error in async eachSeries:- ");
             console.log(error);
         }
         return callback()
     });
 };
 
-function customWeb3GetBlock(blockNumber) {
-
+//custom web3 getBlock with transaction details function if not respond re call in 1 sec
+let customWeb3GetBlock=(blockNumber)=>{
     return new Promise(function (resolve, reject) {
         let finished = false;
         web3.eth.getBlock(blockNumber, true)
@@ -214,12 +213,13 @@ function customWeb3GetBlock(blockNumber) {
         }, 1000);
 
     })
-}
+};
 
-
+// cron function to get transaction from every blocks
 let getTransactions = () => {
     latestBlockNumber(function (blockNumber) {
-        //get all transaction details of this block with block details
+
+        //get all transaction details of this block with transaction details
         customWeb3GetBlock(blockNumber)
             .then(function (block) {
                 if (!block)
@@ -239,14 +239,15 @@ let getTransactions = () => {
 
             })
             .catch((error) => {
-
                 if (error === 'Web3 Timeout')
                     return getTransactions();
+
                 if (error === 'No Block found')
                     return setTimeout(function () {
                         getTransactions();
                         console.log("Block number " + blockNumber + " not found retry....");
                     }, 10000);
+
                 if (error === 'Block has no transaction') {
                     blockNumber++;
                     return updateLastBlockNumber(blockNumber, (err) => {
@@ -256,7 +257,6 @@ let getTransactions = () => {
 
                     })
                 }
-
                 console.log("Get block details error: ");
                 console.log(error);
                 setTimeout(function () {

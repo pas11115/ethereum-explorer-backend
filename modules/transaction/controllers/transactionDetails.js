@@ -3,80 +3,110 @@
  */
 let ethers = require('ethers');
 let utils = ethers.utils;
-let config = require('../../../config');
-let Account = require('../../../models/accountModel');
+let Transaction = require('../../../models/transactionModel');
+let TokenTransaction = require('../../../models/tokenTransactionModel');
 let projectUtils = require('./../../../projectUtils');
 
 let transactionDetails = (req, res) => {
     let address = req.body.address;
-    let transactions = [];
+
+    if (!address)
+        return res.json({success: false, msg: "Address can't be null."});
+
+    //validate address and getChecksumAddress
     try {
-        address = utils.getAddress(address.toLowerCase());
+        address = utils.getAddress(address);
     } catch (error) {
         return res.json({success: false, msg: "Address is not valid.", error: error});
     }
+    let allTransactions = [];
 
-    Account.findOne({address: address.toLowerCase()}, (err, account) => {
-        if (err)
-            return res.json({success: false, msg: "Error while getting transaction history.", error: err});
-        projectUtils.getPendingTransactions(address, false, (err, pendingTransaction) => {
-            if (err)
-                return res.json({success: false, msg: "Error while getting pending transactions.", error: err});
-            if (pendingTransaction.length)
-                transactions = pendingTransaction;
-            if (account ? account.transactions.length : false) {
-                transactions = transactions.concat(account.transactions);
-                transactions = transactions.sort(function(a,b){
-                    // Turn your strings into dates, and then subtract them
-                    // to get a value that is either negative, positive, or zero.
+    //find 'from' transactions of address
+    Transaction.find({from: new RegExp(address, "i")}).lean()
+        .then((fromTransactions) => {
+            if (!fromTransactions.length)
+                return res.json({success: true, transactions: allTransactions});
+            //type:out inject in 'from' all transactions
+            return projectUtils.injectKeyValueInArray(fromTransactions, {type: 'out', isPending: false})
+        })
+        .then((outTransactions) => {
+            allTransactions = outTransactions;
+            //find 'to' transactions of address
+            return Transaction.find({to: new RegExp(address, "i")}).lean();
+        })
+        .then((toTransactions) => {
+            if (!toTransactions.length) {
+                // sort transactions in descending order of timestamp
+                allTransactions = allTransactions.sort(function (a, b) {
                     return new Date(b.timestamp) - new Date(a.timestamp);
                 });
-                return res.json({success: true, transactions: transactions});
+                return res.json({success: true, transactions: allTransactions});
             }
-            transactions = transactions.sort(function(a,b){
-                // Turn your strings into dates, and then subtract them
-                // to get a value that is either negative, positive, or zero.
+            //type:in inject in 'to' all transactions
+            return projectUtils.injectKeyValueInArray(toTransactions, {type: 'in', isPending: false})
+        })
+        .then((inTransactions) => {
+            allTransactions = allTransactions.concat(inTransactions);
+            // sort transactions in descending order of timestamp
+            allTransactions = allTransactions.sort(function (a, b) {
                 return new Date(b.timestamp) - new Date(a.timestamp);
             });
-            res.json({success: true, transactions: transactions});
+            return res.json({success: true, transactions: allTransactions});
+        })
+        .catch((error) => {
+            return res.json({success: false, msg: "Error while getting transactions.", error: error.message});
         });
-    });
 };
 
 let tokenTransactionDetails = (req, res) => {
     let address = req.body.address;
-    let transactions = [];
+
+    if (!address)
+        return res.json({success: false, msg: "Address can't be null."});
+
+    //validate address and getChecksumAddress
     try {
-        address = utils.getAddress(address.toLowerCase());
+        address = utils.getAddress(address);
     } catch (error) {
         return res.json({success: false, msg: "Address is not valid.", error: error});
     }
+    let allTransactions = [];
 
-    Account.findOne({address: address.toLowerCase()}, (err, account) => {
-        if (err)
-            return res.json({success: false, msg: "Error while getting transaction history.", error: err});
-        projectUtils.getPendingTransactions(address, true, (err, pendingTransaction) => {
-            if (err)
-                return res.json({success: false, msg: "Error while getting pending transactions.", error: err});
-            if (pendingTransaction.length)
-                transactions = pendingTransaction;
-            if (account ? account.tokenTransactions.length : false) {
-                transactions = transactions.concat(account.tokenTransactions)
-                transactions = transactions.sort(function(a,b){
-                    // Turn your strings into dates, and then subtract them
-                    // to get a value that is either negative, positive, or zero.
+    //find 'from' transactions of address
+    TokenTransaction.find({from: new RegExp(address, "i")}).lean()
+        .then((fromTransactions) => {
+            if (!fromTransactions.length)
+                return res.json({success: true, transactions: allTransactions});
+            //type:out inject in 'from' all transactions
+            return projectUtils.injectKeyValueInArray(fromTransactions, {type: 'out', isPending: false})
+        })
+        .then((outTransactions) => {
+            allTransactions = outTransactions;
+            //find 'to' transactions of address
+            return TokenTransaction.find({to: new RegExp(address, "i")}).lean();
+        })
+        .then((toTransactions) => {
+            if (!toTransactions.length) {
+                // sort transactions in descending order of timestamp
+                allTransactions = allTransactions.sort(function (a, b) {
                     return new Date(b.timestamp) - new Date(a.timestamp);
                 });
-                return res.json({success: true, transactions: transactions});
+                return res.json({success: true, transactions: allTransactions});
             }
-            transactions = transactions.sort(function(a,b){
-                // Turn your strings into dates, and then subtract them
-                // to get a value that is either negative, positive, or zero.
+            //type:in inject in 'to' all transactions
+            return projectUtils.injectKeyValueInArray(toTransactions, {type: 'in', isPending: false})
+        })
+        .then((inTransactions) => {
+            allTransactions = allTransactions.concat(inTransactions);
+            // sort transactions in descending order of timestamp
+            allTransactions = allTransactions.sort(function (a, b) {
                 return new Date(b.timestamp) - new Date(a.timestamp);
             });
-            res.json({success: true, transactions: transactions});
+            return res.json({success: true, transactions: allTransactions});
+        })
+        .catch((error) => {
+            return res.json({success: false, msg: "Error while getting token transactions.", error: error.message});
         });
-    })
 };
 
 Controller = {

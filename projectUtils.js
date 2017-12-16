@@ -225,3 +225,25 @@ module.exports.getPendingTransactions = (address, isToken, callback) => {
         callback(err)
     });
 };
+
+// function to inject key values in all object of json array
+
+module.exports.injectKeyValueInArray = (array, keyValues) => {
+    return new Promise((resolve, reject) => {
+        if (!array.length)
+            return resolve(array);
+        let newArray = [];
+        async.each(array, (object, next) => {
+            for (let key in keyValues) {
+                object[key] = keyValues[key]
+            }
+
+            newArray.push(object);
+            next();
+        }, (err) => {
+            if (err)
+                return reject(err);
+            resolve(newArray);
+        })
+    })
+};

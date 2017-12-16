@@ -6,7 +6,7 @@
 // import the packages we need
 const express = require('express');                   //import express module
 const bodyParser = require('body-parser');            //import bodyparser
-const mongoose = require('mongoose');                 //import mongoose
+let mongoose = require('mongoose');                 //import mongoose
 mongoose.Promise = require('bluebird'); // set Promise provider to bluebird
 const app = express();                                //import express contractor
 const cors = require('cors');                         //import cors for cross domain requestconst config = require('./config');                   //import config

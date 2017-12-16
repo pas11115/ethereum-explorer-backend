@@ -10,8 +10,8 @@ let transactionSchema = new Schema({
     blockNumber: {type: Number},
     transactionIndex: {type: Number},
     timestamp: {type: Date},
-    from: {type: String},
-    to: {type: String},
+    from: {type: String,index:true},
+    to: {type: String,index:true},
     value: {type: String},
     gasLimit: {type: String},
     gasUsed: {type: String},
@@ -20,14 +20,12 @@ let transactionSchema = new Schema({
     nonce: {type: String},
     data: {type: String},
     isContractCreation: {type: Boolean},
-    isErc20Token: {type: Boolean},
+    isErc20Token: {type: Boolean,index:true},
     token: {
         name: {type: String},
         symbol: {type: String},
-        standard: {type: String},
         decimals: {type: String},
-        totalSupply: {type: String},
-        owner: {type: String},
+        totalSupply: {type: String}
     }
 });
 
