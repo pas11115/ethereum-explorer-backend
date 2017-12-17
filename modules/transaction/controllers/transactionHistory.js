@@ -8,7 +8,7 @@ let TokenTransaction = require('../../../models/tokenTransactionModel');
 let projectUtils = require('./../../../projectUtils');
 
 let transactionHistory = (req, res) => {
-    let address = req.params.address;
+    let address = req.params.address || req.body.address;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});
@@ -63,7 +63,7 @@ let transactionHistory = (req, res) => {
 };
 
 let tokenTransactionHistory = (req, res) => {
-    let address = req.params.address;
+    let address = req.params.address || req.body.address;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});
