@@ -8,7 +8,7 @@ let TokenTransaction = require('../../../models/tokenTransactionModel');
 let projectUtils = require('./../../../projectUtils');
 
 let transactionHistory = (req, res) => {
-    let address = req.body.address;
+    let address = req.params.address;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});
@@ -33,7 +33,7 @@ let transactionHistory = (req, res) => {
             if (outTransactions !== "No transaction in from")
                 allTransactions = outTransactions;
             //find 'to' transactions of address
-            return TokenTransaction.find({to: new RegExp(address, "i")}).lean();
+            return Transaction.find({to: new RegExp(address, "i")}).lean();
         })
         .then((toTransactions) => {
             if (!toTransactions.length) {
@@ -63,7 +63,7 @@ let transactionHistory = (req, res) => {
 };
 
 let tokenTransactionHistory = (req, res) => {
-    let address = req.body.address;
+    let address = req.params.address;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});

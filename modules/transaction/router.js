@@ -6,8 +6,8 @@ let router = express.Router();
 let transactionHistory = require('./controllers/transactionHistory');
 
 //post api to get all transactions of a address
-router.route('^/transactionHistory').post(transactionHistory.transactionHistory);
+router.route('^/transactionHistory/:address$').get(transactionHistory.transactionHistory);
 //post api to get all token transactions of a address
-router.route('^/tokenTransactionHistory$').post(transactionHistory.tokenTransactionHistory);
+router.route('^/tokenTransactionHistory/:address$').get(transactionHistory.tokenTransactionHistory);
 
 module.exports = router;
