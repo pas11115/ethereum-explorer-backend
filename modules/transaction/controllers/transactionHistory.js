@@ -117,9 +117,46 @@ let tokenTransactionHistory = (req, res) => {
         });
 };
 
+let accountTransactionCount = (req, res) => {
+    let address = req.params.address;
+
+    if (!address)
+        return res.json({success: false, msg: "Address can't be null."});
+
+    //validate address and getChecksumAddress
+    try {
+        address = utils.getAddress(address);
+    } catch (error) {
+        return res.json({success: false, msg: "Address is not valid.", error: error});
+    }
+    let transactionCount = 0;
+    let tokenTransactionCount = 0;
+    Transaction.count({from: address})
+        .then((fromTransactionCount) => {
+            transactionCount = fromTransactionCount;
+            return Transaction.count({to: address});
+        })
+        .then((toTransactionCount) => {
+            transactionCount = transactionCount + toTransactionCount;
+            return TokenTransaction.count({from: address});
+        })
+        .then((fromTokenTransactionCount) => {
+            tokenTransactionCount = fromTokenTransactionCount;
+            return TokenTransaction.count({to: address});
+        })
+        .then((toTokenTransactionCount) => {
+            tokenTransactionCount = toTokenTransactionCount + toTokenTransactionCount;
+            res.json({success: true, transactionCount, tokenTransactionCount});
+        })
+        .catch((error) => {
+            return res.json({success: false, msg: "Error while getting transaction count.", error: error.message});
+        });
+};
+
 Controller = {
     transactionHistory,
-    tokenTransactionHistory
+    tokenTransactionHistory,
+    accountTransactionCount
 };
 
 module.exports = Controller;
