@@ -129,8 +129,11 @@ let accountTransactionCount = (req, res) => {
     } catch (error) {
         return res.json({success: false, msg: "Address is not valid.", error: error});
     }
+
     let transactionCount = 0;
     let tokenTransactionCount = 0;
+
+    // get transaction count of particular address in token and transaction db
     Transaction.count({from: address})
         .then((fromTransactionCount) => {
             transactionCount = fromTransactionCount;
@@ -145,7 +148,7 @@ let accountTransactionCount = (req, res) => {
             return TokenTransaction.count({to: address});
         })
         .then((toTokenTransactionCount) => {
-            tokenTransactionCount = toTokenTransactionCount + toTokenTransactionCount;
+            tokenTransactionCount = tokenTransactionCount + toTokenTransactionCount;
             res.json({success: true, transactionCount, tokenTransactionCount});
         })
         .catch((error) => {
