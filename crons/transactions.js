@@ -82,7 +82,7 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
 
     //check decoded data name is transfer or not
     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name === 'transfer' : false) {
-        Transaction.findOne({to: new RegExp(transaction.to, "i"), isErc20Token: true})
+        Transaction.findOne({to: transaction.to, isErc20Token: true})
             .then((oldTransaction) => {
                 if (oldTransaction)
                     if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
@@ -102,9 +102,7 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
                         });
                         return newTokenTransaction.save()
                     }
-            }).then((result) => {
-            // console.log(result)
-        }).catch((err) => {
+            }).catch((err) => {
             return callback(err)
         })
     }
@@ -160,11 +158,12 @@ let getTransactionFromBlock = (block, callback) => {
             }
             //call token details function to update token details
             getTokenDetails(transactionReceipt.contractAddress, (error, token) => {
-                if (error)
-                    throw error;
-                newTransaction.isErc20Token = true;
-                newTransaction.token = token;
-                newTransaction.save()
+                if (!error) {
+                    newTransaction.isErc20Token = true;
+                    newTransaction.token = token;
+                    newTransaction.save();
+                    next()
+                }
             });
         }).catch((error) => {
             if (error !== "Transaction Saved") {
