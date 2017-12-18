@@ -19,10 +19,11 @@ let transactionHistory = (req, res) => {
     } catch (error) {
         return res.json({success: false, msg: "Address is not valid.", error: error});
     }
+    let select = 'hash blockNumber timestamp from to isContractCreation value txtFee isErc20Token';
     let allTransactions = [];
 
     //find 'from' transactions of address
-    Transaction.find({from: address}).lean()
+    Transaction.find({from: address}).select(select).lean()
         .then((fromTransactions) => {
             if (!fromTransactions.length)
                 return "No transaction in from";
@@ -33,7 +34,7 @@ let transactionHistory = (req, res) => {
             if (outTransactions !== "No transaction in from")
                 allTransactions = outTransactions;
             //find 'to' transactions of address
-            return Transaction.find({to: address}).lean();
+            return Transaction.find({to: address}).select(select).lean();
         })
         .then((toTransactions) => {
             if (!toTransactions.length) {
