@@ -9,6 +9,7 @@ let projectUtils = require('./../../../projectUtils');
 
 let transactionHistory = (req, res) => {
     let address = req.params.address;
+    let pageNumber = req.params.pageNumber;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});
@@ -19,6 +20,14 @@ let transactionHistory = (req, res) => {
     } catch (error) {
         return res.json({success: false, msg: "Address is not valid.", error: error});
     }
+
+    if (!pageNumber)
+        pageNumber = 1;
+
+    let limit = 50;
+    let skip = limit * (pageNumber - 1);
+
+
     let select = 'hash blockNumber timestamp from to isContractCreation value txtFee isErc20Token';
     let allTransactions = [];
 
@@ -43,6 +52,10 @@ let transactionHistory = (req, res) => {
                     allTransactions = allTransactions.sort(function (a, b) {
                         return new Date(b.timestamp) - new Date(a.timestamp);
                     });
+
+                //skip and limit on array
+                allTransactions = allTransactions.slice(skip,skip+limit);
+
                 res.json({success: true, transactions: allTransactions});
                 throw 'Returned';
             }
@@ -55,6 +68,10 @@ let transactionHistory = (req, res) => {
             allTransactions = allTransactions.sort(function (a, b) {
                 return new Date(b.timestamp) - new Date(a.timestamp);
             });
+
+            //skip and limit on array
+            allTransactions = allTransactions.slice(skip,skip+limit);
+
             return res.json({success: true, transactions: allTransactions});
         })
         .catch((error) => {
@@ -65,6 +82,7 @@ let transactionHistory = (req, res) => {
 
 let tokenTransactionHistory = (req, res) => {
     let address = req.params.address;
+    let pageNumber = req.params.pageNumber;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});
@@ -75,6 +93,14 @@ let tokenTransactionHistory = (req, res) => {
     } catch (error) {
         return res.json({success: false, msg: "Address is not valid.", error: error});
     }
+
+
+    if (!pageNumber)
+        pageNumber = 1;
+
+    let limit = 50;
+    let skip = limit * (pageNumber - 1);
+
     let allTransactions = [];
 
     //find 'from' transactions of address
@@ -98,6 +124,10 @@ let tokenTransactionHistory = (req, res) => {
                     allTransactions = allTransactions.sort(function (a, b) {
                         return new Date(b.timestamp) - new Date(a.timestamp);
                     });
+
+                //skip and limit on array
+                allTransactions = allTransactions.slice(skip,skip+limit);
+
                 res.json({success: true, transactions: allTransactions});
                 throw 'Returned';
             }
@@ -110,6 +140,10 @@ let tokenTransactionHistory = (req, res) => {
             allTransactions = allTransactions.sort(function (a, b) {
                 return new Date(b.timestamp) - new Date(a.timestamp);
             });
+
+            //skip and limit on array
+            allTransactions = allTransactions.slice(skip,skip+limit);
+
             return res.json({success: true, transactions: allTransactions});
         })
         .catch((error) => {

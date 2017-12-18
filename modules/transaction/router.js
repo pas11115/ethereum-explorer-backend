@@ -6,10 +6,10 @@ let router = express.Router();
 let transactionHistory = require('./controllers/transactionHistory');
 
 //get api to get all transactions of a address
-router.route('^/transactionHistory/:address$').get(transactionHistory.transactionHistory);
+router.route('^/transactionHistory/:address/:pageNumber$').get(transactionHistory.transactionHistory);
 
 //get api to get all token transactions of a address
-router.route('^/tokenTransactionHistory/:address$').get(transactionHistory.tokenTransactionHistory);
+router.route('^/tokenTransactionHistory/:address/:pageNumber$').get(transactionHistory.tokenTransactionHistory);
 
 //
 router.route('^/accountTransactionCount/:address$').get(transactionHistory.accountTransactionCount);
