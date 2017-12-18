@@ -164,6 +164,8 @@ let getTransactionFromBlock = (block, callback) => {
                     next()
                 }
             });
+        }).then((result)=>{
+            next()
         }).catch((error) => {
             console.log("Error while getting transaction receipt: ");
             console.log(error);
