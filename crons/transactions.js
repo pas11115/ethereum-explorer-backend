@@ -167,8 +167,10 @@ let getTransactionFromBlock = (block, callback) => {
                 newTransaction.save()
             });
         }).catch((error) => {
-            console.log("Error while getting transaction receipt: ");
-            console.log(error);
+            if (error !== "Transaction Saved") {
+                console.log("Error while getting transaction receipt: ");
+                console.log(error);
+            }
             next();
         });
     }, function (error) {
