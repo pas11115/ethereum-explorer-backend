@@ -21,7 +21,7 @@ let transactionHistory1 = (req, res) => {
     }
 
     //find 'from' transactions of address
-    Transaction.find({from: new RegExp(address, "i")})
+    Transaction.find({from: address})
         .then((fromTransactions) => {
             //type:out inject in 'from' all transactions
             res.json({success: true, transactions: fromTransactions});
@@ -44,7 +44,7 @@ let transactionHistory2 = (req, res) => {
     }
 
     //find 'from' transactions of address
-    Transaction.find({from: new RegExp(address, "i")})
+    Transaction.find({from: address})
         .then((fromTransactions) => {
             //type:out inject in 'from' all transactions
             res.json({success: true, transactions: fromTransactions});
@@ -67,7 +67,7 @@ let transactionHistory3 = (req, res) => {
     }
 
     //find 'from' transactions of address
-    Transaction.find({to: new RegExp(address, "i")}).lean()
+    Transaction.find({to: address}).lean()
         .then((fromTransactions) => {
             //type:out inject in 'from' all transactions
             res.json({success: true, transactions: fromTransactions});
