@@ -7,8 +7,87 @@ let Transaction = require('../../../models/transactionModel');
 let TokenTransaction = require('../../../models/tokenTransactionModel');
 let projectUtils = require('./../../../projectUtils');
 
+let transactionHistory1 = (req, res) => {
+    let address = req.params.address;
+
+    if (!address)
+        return res.json({success: false, msg: "Address can't be null."});
+
+    //validate address and getChecksumAddress
+    try {
+        address = utils.getAddress(address);
+    } catch (error) {
+        return res.json({success: false, msg: "Address is not valid.", error: error});
+    }
+
+    //find 'from' transactions of address
+    Transaction.find({from: new RegExp(address, "i")})
+        .then((fromTransactions) => {
+            if (!fromTransactions.length)
+                return "No transaction in from";
+            //type:out inject in 'from' all transactions
+            res.json({success: true, transactions: fromTransactions});
+        })
+        .catch((error) => {
+            if (error !== 'Returned')
+                return res.json({success: false, msg: "Error while getting transactions.", error: error.message});
+        });
+};
+let transactionHistory2 = (req, res) => {
+    let address = req.params.address;
+
+    if (!address)
+        return res.json({success: false, msg: "Address can't be null."});
+
+    //validate address and getChecksumAddress
+    try {
+        address = utils.getAddress(address);
+    } catch (error) {
+        return res.json({success: false, msg: "Address is not valid.", error: error});
+    }
+
+    //find 'from' transactions of address
+    Transaction.find({from: new RegExp(address, "i")})
+        .then((fromTransactions) => {
+            if (!fromTransactions.length)
+                return "No transaction in from";
+            //type:out inject in 'from' all transactions
+            res.json({success: true, transactions: fromTransactions});
+        })
+        .catch((error) => {
+            if (error !== 'Returned')
+                return res.json({success: false, msg: "Error while getting transactions.", error: error.message});
+        });
+};
+let transactionHistory3 = (req, res) => {
+    let address = req.params.address;
+
+    if (!address)
+        return res.json({success: false, msg: "Address can't be null."});
+
+    //validate address and getChecksumAddress
+    try {
+        address = utils.getAddress(address);
+    } catch (error) {
+        return res.json({success: false, msg: "Address is not valid.", error: error});
+    }
+
+    //find 'from' transactions of address
+    Transaction.find({to: new RegExp(address, "i")}).lean()
+        .then((fromTransactions) => {
+            if (!fromTransactions.length)
+                return "No transaction in from";
+            //type:out inject in 'from' all transactions
+            res.json({success: true, transactions: fromTransactions});
+        })
+        .catch((error) => {
+            if (error !== 'Returned')
+                return res.json({success: false, msg: "Error while getting transactions.", error: error.message});
+        });
+};
+
 let transactionHistory = (req, res) => {
-    let address = req.params.address || req.body.address;
+    let address = req.params.address;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});
@@ -63,7 +142,7 @@ let transactionHistory = (req, res) => {
 };
 
 let tokenTransactionHistory = (req, res) => {
-    let address = req.params.address || req.body.address;
+    let address = req.params.address;
 
     if (!address)
         return res.json({success: false, msg: "Address can't be null."});
@@ -118,6 +197,9 @@ let tokenTransactionHistory = (req, res) => {
 };
 
 Controller = {
+    transactionHistory1,
+    transactionHistory2,
+    transactionHistory3,
     transactionHistory,
     tokenTransactionHistory
 };
