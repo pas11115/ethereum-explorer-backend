@@ -63,7 +63,7 @@ router.use('/transaction', require('./modules/transaction/router'));
 app.use('/api', router);
 
 // Start cron job to get transactions form every block
-transactionsCron.getTransactions();
+// transactionsCron.getTransactions();
 
 // START THE SERVER
 // =============================================================================
