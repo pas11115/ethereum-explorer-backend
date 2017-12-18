@@ -153,8 +153,7 @@ let getTransactionFromBlock = (block, callback) => {
                 isContractCreation: isContractCreation,
             });
             if (!isContractCreation) {
-                newTransaction.save();
-                throw "Transaction Saved"
+                return newTransaction.save();
             }
             //call token details function to update token details
             getTokenDetails(transactionReceipt.contractAddress, (error, token) => {
@@ -166,10 +165,8 @@ let getTransactionFromBlock = (block, callback) => {
                 }
             });
         }).catch((error) => {
-            if (error !== "Transaction Saved") {
-                console.log("Error while getting transaction receipt: ");
-                console.log(error);
-            }
+            console.log("Error while getting transaction receipt: ");
+            console.log(error);
             next();
         });
     }, function (error) {
