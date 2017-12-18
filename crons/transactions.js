@@ -154,30 +154,17 @@ let getTransactionFromBlock = (block, callback) => {
                 data: transaction.input,
                 isContractCreation: isContractCreation,
             });
-            if (!isContractCreation)
-                return newTransaction.save((err, result) => {
-                    if (err) {
-                        console.log("Error while saving new Transaction.");
-                        console.log(err);
-                    }
-                    next()
-                });
+            if (!isContractCreation) {
+                newTransaction.save();
+                throw "Transaction Saved"
+            }
             //call token details function to update token details
-            getTokenDetails(transactionReceipt.contractAddress, (err, token) => {
-                if (err) {
-                    // console.log("Error while getting token details: ");
-                    // console.log(err);
-                    return next();
-                }
+            getTokenDetails(transactionReceipt.contractAddress, (error, token) => {
+                if (error)
+                    throw error;
                 newTransaction.isErc20Token = true;
                 newTransaction.token = token;
-                newTransaction.save((err, result) => {
-                    if (err) {
-                        console.log("Error while saving new Transaction with isErc20Token.");
-                        console.log(err);
-                    }
-                    next()
-                })
+                newTransaction.save()
             });
         }).catch((error) => {
             console.log("Error while getting transaction receipt: ");
@@ -194,7 +181,7 @@ let getTransactionFromBlock = (block, callback) => {
 };
 
 //custom web3 getBlock with transaction details function if not respond re call in 1 sec
-let customWeb3GetBlock=(blockNumber)=>{
+let customWeb3GetBlock = (blockNumber) => {
     return new Promise(function (resolve, reject) {
         let finished = false;
         web3.eth.getBlock(blockNumber, true)
