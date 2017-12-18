@@ -92,7 +92,7 @@ let transactionHistory = (req, res) => {
     let allTransactions = [];
 
     //find 'from' transactions of address
-    Transaction.find({from: new RegExp(address, "i")}).lean()
+    Transaction.find({from: address}).lean()
         .then((fromTransactions) => {
             console.log("In 1 time: " + (new Date() - t))
             if (!fromTransactions.length)
@@ -105,7 +105,7 @@ let transactionHistory = (req, res) => {
             if (outTransactions !== "No transaction in from")
                 allTransactions = outTransactions;
             //find 'to' transactions of address
-            return Transaction.find({to: new RegExp(address, "i")}).lean();
+            return Transaction.find({to: address}).lean();
         })
         .then((toTransactions) => {
             console.log("In 3 time: " + (new Date() - t))
@@ -152,7 +152,7 @@ let tokenTransactionHistory = (req, res) => {
     let allTransactions = [];
 
     //find 'from' transactions of address
-    TokenTransaction.find({from: new RegExp(address, "i")}).lean()
+    TokenTransaction.find({from: address}).lean()
         .then((fromTransactions) => {
             if (!fromTransactions.length)
                 return "No transaction in from";
@@ -163,7 +163,7 @@ let tokenTransactionHistory = (req, res) => {
             if (outTransactions !== "No transaction in from")
                 allTransactions = outTransactions;
             //find 'to' transactions of address
-            return TokenTransaction.find({to: new RegExp(address, "i")}).lean();
+            return TokenTransaction.find({to: address}).lean();
         })
         .then((toTransactions) => {
             if (!toTransactions.length) {
