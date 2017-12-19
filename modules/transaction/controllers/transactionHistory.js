@@ -32,13 +32,8 @@ let transactionHistory = (req, res) => {
     let allTransactions = [];
 
     //find 'from' transactions of address
-    Transaction.find({$or: [{from: address}, {to: address}]}).select(select).skip(skip).limit(limit).lean()
+    Transaction.find({$or: [{from: address}, {to: address}]}).select(select).sort({'timestamp': -1}).skip(skip).limit(limit).lean()
         .then((transactions) => {
-            if (!transactions.length)
-                return res.json({success: true, transactions: transactions});
-            transactions = transactions.sort(function (a, b) {
-                return new Date(b.timestamp) - new Date(a.timestamp);
-            });
             res.json({success: true, transactions: transactions});
         })
         .catch((error) => {
