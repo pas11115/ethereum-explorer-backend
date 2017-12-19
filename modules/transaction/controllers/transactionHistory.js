@@ -32,6 +32,20 @@ let transactionHistory = (req, res) => {
     let allTransactions = [];
 
     //find 'from' transactions of address
+    Transaction.find({$or: [{from: address}, {to: address}]}).select(select).skip(skip).limit(limit).lean()
+        .then((transactions) => {
+            if (!transactions.length)
+                return res.json({success: true, transactions: transactions});
+            transactions = transactions.sort(function (a, b) {
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            });
+            res.json({success: true, transactions: transactions});
+        })
+        .catch((error) => {
+            res.json({success: false, msg: "Error while getting transactions.", error: error.message});
+        });
+
+    /*//find 'from' transactions of address
     Transaction.find({from: address}).select(select).lean()
         .then((fromTransactions) => {
             if (!fromTransactions.length)
@@ -77,7 +91,7 @@ let transactionHistory = (req, res) => {
         .catch((error) => {
             if (error !== 'Returned')
                 return res.json({success: false, msg: "Error while getting transactions.", error: error.message});
-        });
+        });*/
 };
 
 let tokenTransactionHistory = (req, res) => {
@@ -126,7 +140,7 @@ let tokenTransactionHistory = (req, res) => {
                     });
 
                 //skip and limit on array
-                allTransactions = allTransactions.slice(skip,skip+limit);
+                allTransactions = allTransactions.slice(skip, skip + limit);
 
                 res.json({success: true, transactions: allTransactions});
                 throw 'Returned';
@@ -142,7 +156,7 @@ let tokenTransactionHistory = (req, res) => {
             });
 
             //skip and limit on array
-            allTransactions = allTransactions.slice(skip,skip+limit);
+            allTransactions = allTransactions.slice(skip, skip + limit);
 
             return res.json({success: true, transactions: allTransactions});
         })
