@@ -113,7 +113,7 @@ let tokenTransactionHistory = (req, res) => {
     let skip = limit * (pageNumber - 1);
 
     //find 'from' or 'to' transactions of address
-    Transaction.find({$or: [{from: address}, {to: address}]}).select(select).sort({'timestamp': -1}).skip(skip).limit(limit).lean()
+    TokenTransaction.find({$or: [{from: address}, {to: address}]}).sort({'timestamp': -1}).skip(skip).limit(limit).lean()
         .then((transactions) => {
             res.json({success: true, transactions: transactions});
         })

@@ -8,13 +8,13 @@ let Schema = mongoose.Schema;
 let tokenTransactionSchema = new Schema({
     hash: {type: String, required: true, unique: true},
     blockNumber: {type: Number},
-    tokenAddress: {type: String,index:true},
-    tokenSymbol:{type:String},
-    decimals:{type:String},
-    from: {type: String,index:true},
-    to: {type: String,index:true},
+    tokenAddress: {type: String, index: true},
+    tokenSymbol: {type: String},
+    decimals: {type: String},
+    from: {type: String, index: true},
+    to: {type: String, index: true},
     value: {type: String},
-    timestamp: {type: Date}
+    timestamp: {type: Date, index: true}
 });
 
 module.exports = mongoose.model('tokenTransaction', tokenTransactionSchema);
