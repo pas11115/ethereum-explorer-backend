@@ -29,9 +29,8 @@ let transactionHistory = (req, res) => {
 
 
     let select = 'hash blockNumber timestamp from to isContractCreation value txtFee isErc20Token';
-    let allTransactions = [];
 
-    //find 'from' transactions of address
+    //find 'from' or 'to' transactions of address
     Transaction.find({$or: [{from: address}, {to: address}]}).select(select).sort({'timestamp': -1}).skip(skip).limit(limit).lean()
         .then((transactions) => {
             res.json({success: true, transactions: transactions});
@@ -40,7 +39,10 @@ let transactionHistory = (req, res) => {
             res.json({success: false, msg: "Error while getting transactions.", error: error.message});
         });
 
-    /*//find 'from' transactions of address
+    /*
+    let allTransactions = [];
+
+    //find 'from' transactions of address
     Transaction.find({from: address}).select(select).lean()
         .then((fromTransactions) => {
             if (!fromTransactions.length)
@@ -110,7 +112,16 @@ let tokenTransactionHistory = (req, res) => {
     let limit = 50;
     let skip = limit * (pageNumber - 1);
 
-    let allTransactions = [];
+    //find 'from' or 'to' transactions of address
+    Transaction.find({$or: [{from: address}, {to: address}]}).select(select).sort({'timestamp': -1}).skip(skip).limit(limit).lean()
+        .then((transactions) => {
+            res.json({success: true, transactions: transactions});
+        })
+        .catch((error) => {
+            res.json({success: false, msg: "Error while getting transactions.", error: error.message});
+        });
+
+    /*let allTransactions = [];
 
     //find 'from' transactions of address
     TokenTransaction.find({from: address}).lean()
@@ -158,7 +169,7 @@ let tokenTransactionHistory = (req, res) => {
         .catch((error) => {
             if (error !== 'Returned')
                 return res.json({success: false, msg: "Error while getting token transactions.", error: error.message});
-        });
+        });*/
 };
 
 let accountTransactionCount = (req, res) => {
@@ -175,30 +186,44 @@ let accountTransactionCount = (req, res) => {
     }
 
     let transactionCount = 0;
-    let tokenTransactionCount = 0;
 
     // get transaction count of particular address in token and transaction db
-    Transaction.count({from: address})
-        .then((fromTransactionCount) => {
-            transactionCount = fromTransactionCount;
-            return Transaction.count({to: address});
+    Transaction.count({$or: [{from: address}, {to: address}]})
+        .then((allTransactionCount) => {
+            transactionCount = allTransactionCount;
+            return TokenTransaction.count({$or: [{from: address}, {to: address}]});
         })
-        .then((toTransactionCount) => {
-            transactionCount = transactionCount + toTransactionCount;
-            return TokenTransaction.count({from: address});
-        })
-        .then((fromTokenTransactionCount) => {
-            tokenTransactionCount = fromTokenTransactionCount;
-            return TokenTransaction.count({to: address});
-        })
-        .then((toTokenTransactionCount) => {
-            tokenTransactionCount = tokenTransactionCount + toTokenTransactionCount;
+        .then((tokenTransactionCount) => {
+            tokenTransactionCount;
             res.json({success: true, transactionCount, tokenTransactionCount});
         })
         .catch((error) => {
             return res.json({success: false, msg: "Error while getting transaction count.", error: error.message});
         });
 };
+
+/*// get transaction count of particular address in token and transaction db
+Transaction.count({from: address})
+    .then((fromTransactionCount) => {
+        transactionCount = fromTransactionCount;
+        return Transaction.count({to: address});
+    })
+    .then((toTransactionCount) => {
+        transactionCount = transactionCount + toTransactionCount;
+        return TokenTransaction.count({from: address});
+    })
+    .then((fromTokenTransactionCount) => {
+        tokenTransactionCount = fromTokenTransactionCount;
+        return TokenTransaction.count({to: address});
+    })
+    .then((toTokenTransactionCount) => {
+        tokenTransactionCount = tokenTransactionCount + toTokenTransactionCount;
+        res.json({success: true, transactionCount, tokenTransactionCount});
+    })
+    .catch((error) => {
+        return res.json({success: false, msg: "Error while getting transaction count.", error: error.message});
+    });
+};*/
 
 Controller = {
     transactionHistory,
