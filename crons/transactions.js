@@ -163,12 +163,12 @@ let getTransactionFromBlock = (block, callback) => {
             }
             //call token details function to update token details
             getTokenDetails(transactionReceipt.contractAddress, (error, token) => {
-                if (!error) {
-                    newTransaction.isErc20Token = true;
-                    newTransaction.token = token;
-                    newTransaction.save();
-                    next()
-                }
+                if (error)
+                    return newTransaction.save();
+
+                newTransaction.isErc20Token = true;
+                newTransaction.token = token;
+                return newTransaction.save();
             });
         }).then((result) => {
             next()
@@ -247,7 +247,6 @@ let getTransactions = () => {
                         if (err)
                             console.log(err);
                         getTransactions();
-
                     })
                 }
                 console.log("Get block details error: ");
