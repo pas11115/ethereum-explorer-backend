@@ -87,6 +87,12 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
                 if (oldTransaction)
                     if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
                         let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
+                        //validate address and getChecksumAddress
+                        try {
+                            tokenToAddress = utils.getAddress(tokenToAddress);
+                        } catch (error) {
+                            throw error;
+                        }
                         let transactionValue = tokenTransactionData.inputs[1];
 
                         let newTokenTransaction = new TokenTransaction({
@@ -164,7 +170,7 @@ let getTransactionFromBlock = (block, callback) => {
                     next()
                 }
             });
-        }).then((result)=>{
+        }).then((result) => {
             next()
         }).catch((error) => {
             console.log("Error while getting transaction receipt: ");
