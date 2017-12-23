@@ -125,7 +125,7 @@ let getTransactionFromBlock = (block, callback) => {
 
             // check transaction data for update token transactions
             // check transaction data not empty and not contact deployment and have 'to' address
-            if (transaction.input !== "0x" && !transaction.contractAddress && transaction.to)
+            if (transaction.input !== "0x" && !transactionReceipt.contractAddress && transaction.to)
                 findTokenTransactionsFromData(transaction, timestamp, (err) => {
                     if (err) {
                         console.log("Error in findTokenTransactions:- ");
