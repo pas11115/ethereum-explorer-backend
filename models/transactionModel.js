@@ -12,7 +12,7 @@ let transactionSchema = new Schema({
     timestamp: {type: Date, index: true},
     from: {type: String, index: true},
     to: {type: String, index: true},
-    value: {type: String},
+    value: {type: String, index:true},
     gasLimit: {type: String},
     gasUsed: {type: String},
     gasPrice: {type: String},
