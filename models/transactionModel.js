@@ -19,7 +19,7 @@ let transactionSchema = new Schema({
     txtFee: {type: String},
     nonce: {type: String},
     data: {type: String},
-    isContractCreation: {type: Boolean},
+    isContractCreation: {type: Boolean, index:true},
     isErc20Token: {type: Boolean, index: true},
     token: {
         name: {type: String},
