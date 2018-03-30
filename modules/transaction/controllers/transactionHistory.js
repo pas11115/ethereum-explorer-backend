@@ -67,6 +67,7 @@ const transactionHistory = (req, res) => {
 };
 
 const tokenTransactionHistory = (req, res) => {
+    const db = req.db;
     let address = req.params.address;
     let pageNumber = req.params.pageNumber;
 
