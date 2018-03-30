@@ -1,5 +1,5 @@
 /**
- * Created by Tauseef Naqvi on 15-12-2017.
+ * Created by Tauseef Naqvi on 28-03-2018.
  */
 const config = require('./../config');
 let web3 = require('web3');
@@ -13,89 +13,102 @@ const utils = ethers.utils;
 const network = providers.networks.ropsten;
 const decoder = new InputDataDecoder(projectUtils.abi);
 
-let Transaction = require('../models/transactionModel');
-let TokenTransaction = require('../models/tokenTransactionModel');
-let Configuration = require('./../models/configurationModel');
 // let provider = new providers.JsonRpcProvider(config.rpcUrl,{chainId: 1});
 //change network for other chainId
 let provider = new providers.JsonRpcProvider(config.rpcUrl, network);
 
 //update last block number in db
-let updateLastBlockNumber = (latestBlockNumber, callback) => {
-    Configuration.findOneAndUpdate({key: "latestBlockNumber"}, {value: latestBlockNumber}, {
-        new: true,
-        upsert: true
-    }, (err, result) => {
-        if (err)
+let updateLastBlockNumber = (db, latestBlockNumber, callback) => {
+    db.configDb.put('latestBlockNumber', latestBlockNumber)
+        .then(() => {
+            callback(null)
+        })
+        .catch((err) => {
             return callback(err);
-        callback(null)
-    })
+        });
 };
 
 //find last updated block number in db
-let latestBlockNumber = (cb) => {
-    Configuration.findOne({key: "latestBlockNumber"}, (err, result) => {
-        if (err)
+let latestBlockNumber = (db, cb) => {
+    projectUtils.findLvDb('latestBlockNumber', db.configDb)
+        .then((result) => {
+            return cb(Number(result));
+        })
+        .catch((err) => {
             console.log(err);
-        if (result)
-            return cb(Number(result.value));
-        cb(1);
-    });
+            return cb(1);
+        });
 };
 
 // check and find token details from contract address
-let getTokenDetails = (contractAddress, callback) => {
-    let contract = new ethers.Contract(contractAddress, projectUtils.abi, provider);
+let checkAndUpdateErc20 = (db, contractAddress, callback) => {
+    // let contract = new ethers.Contract(contractAddress, projectUtils.abi, provider);
+    let contract = new web3.eth.Contract(projectUtils.abi, contractAddress);
 
     let token = {};
+    contract = contract.methods;
     //sample eth address to check contract have valid balanceOf function
-    contract.balanceOf('0xCF4eE917014309655b1f4055861a45782403127d')
-        .then(function () {
-            return contract.name();
+    contract.totalSupply().call()
+        .then((totalSupply) => {
+            if (totalSupply !== '0')
+                token.totalSupply = totalSupply;
+            return contract.balanceOf('0xCF4eE917014309655b1f4055861a45782403127d').call()
         })
-        .then(function (name) {
-            token.name = name;
-            return contract.symbol();
+        .then(() => {
+            return contract.decimals().call();
         })
-        .then(function (symbol) {
-            token.symbol = symbol;
-            return contract.decimals();
+        .then((decimals) => {
+            if (decimals !== '0')
+                token.decimals = decimals;
+            return contract.name().call();
         })
-        .then(function (decimals) {
-            token.decimals = decimals;
-            return contract.totalSupply()
+        .then((name) => {
+            if (name !== '0')
+                token.name = name;
+            return contract.symbol().call();
         })
-        .then(function (totalSupply) {
-            token.totalSupply = totalSupply;
-            return callback(null, token);
+        .then((symbol) => {
+            if (symbol !== '0')
+                token.symbol = symbol;
+            if (Object.keys(token).length) {
+                db.erc20TokenDb.put(contractAddress, JSON.stringify(token));
+                return callback(token);
+            }
+            else callback(false)
         })
         .catch((err) => {
-            return callback(contractAddress + err);
+            console.log(contractAddress +" - "+ err);
+            if (Object.keys(token).length) {
+                db.erc20TokenDb.put(contractAddress, JSON.stringify(token));
+                return callback(token);
+            }
+            else callback(false)
         });
 };
 
 //find token transaction details from data/input parameter of transaction and update token transaction
-let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
+let findTokenTransactionsFromData = (db, transaction, timestamp, callback) => {
 
     //decode transaction data to check transfer function exits
     let tokenTransactionData = decoder.decodeData(transaction.input);
+    let oldTransaction, tokenToAddress, transactionValue;
 
     //check decoded data name is transfer or not
     if (Object.keys(tokenTransactionData).length ? tokenTransactionData.name === 'transfer' : false) {
-        Transaction.findOne({to: transaction.to, isErc20Token: true})
-            .then((oldTransaction) => {
-                if (oldTransaction)
-                    if (Object.keys(oldTransaction).length ? oldTransaction.isErc20Token && oldTransaction.token : false) {
-                        let tokenToAddress = "0x" + tokenTransactionData.inputs[0];
+        projectUtils.findLvDb(transaction.to, db.erc20TokenDb)
+            .then((_oldTransaction) => {
+                if (_oldTransaction)
+                    if (Object.keys(_oldTransaction).length ? _oldTransaction.isErc20Token && _oldTransaction.token : false) {
+                        tokenToAddress = "0x" + tokenTransactionData.inputs[0];
                         //validate address and getChecksumAddress
                         try {
                             tokenToAddress = utils.getAddress(tokenToAddress);
                         } catch (error) {
                             throw error;
                         }
-                        let transactionValue = tokenTransactionData.inputs[1];
-
-                        let newTokenTransaction = new TokenTransaction({
+                        transactionValue = tokenTransactionData.inputs[1];
+                        oldTransaction = _oldTransaction;
+                        let transDetails = {
                             hash: transaction.hash,
                             blockNumber: transaction.blockNumber,
                             tokenAddress: transaction.to,
@@ -105,74 +118,87 @@ let findTokenTransactionsFromData = (transaction, timestamp, callback) => {
                             to: tokenToAddress,
                             value: transactionValue,
                             timestamp: timestamp
-                        });
-                        return newTokenTransaction.save()
+                        };
+                        return db.tokenTransactionDb.put(transaction.hash, JSON.stringify(transDetails))
                     }
-            }).catch((err) => {
-            return callback(err)
-        })
+            })
+            .then(() => {
+                return projectUtils.findAndUpdateLvDb(transaction.from, transaction.hash, db.tokenAccountDb);
+            })
+            .then(() => {
+                return projectUtils.findAndUpdateLvDb(transaction.to, transaction.hash, db.tokenAccountDb);
+            })
+            .catch((err) => {
+                callback(err);
+            });
     }
 };
 
 //get all transaction details from block and update in db
-let getTransactionFromBlock = (block, callback) => {
+let getTransactionFromBlock = (db, block, callback) => {
 
     //timestamp in seconds convert into milliseconds
     let timestamp = Number(block.timestamp) * 1000;
 
-    async.eachSeries(block.transactions, function (transaction, next) {
-        web3.eth.getTransactionReceipt(transaction.hash).then(function (transactionReceipt) {
+    async.each(block.transactions, function (transaction, next) {
 
-            // check transaction data for update token transactions
-            // check transaction data not empty and not contact deployment and have 'to' address
-            if (transaction.input !== "0x" && !transactionReceipt.contractAddress && transaction.to)
-                findTokenTransactionsFromData(transaction, timestamp, (err) => {
-                    if (err) {
-                        console.log("Error in findTokenTransactions:- ");
-                        console.log(err);
-                    }
+        web3.eth.getTransactionReceipt(transaction.hash)
+            .then(function (transactionReceipt) {
+                // check transaction data for update token transactions
+                // check transaction data not empty and not contact deployment and have 'to' address
+                if (transaction.input !== "0x" && !transactionReceipt.contractAddress && transaction.to)
+                    findTokenTransactionsFromData(db, transaction, timestamp, (err) => {
+                        if (err) {
+                            console.log("Error in findTokenTransactions:- ");
+                            console.log(err);
+                        }
+                    });
+
+                let isContractCreation = false;
+                let gasPrice = transaction.gasPrice;
+                let txtFee = gasPrice * transactionReceipt.gasUsed;
+
+                if (transactionReceipt.contractAddress && !transaction.to) {
+                    transaction.to = transactionReceipt.contractAddress;
+                    isContractCreation = true;
+                }
+                let newTransaction = {
+                    hash: transaction.hash,
+                    blockNumber: transaction.blockNumber,
+                    transactionIndex: transaction.transactionIndex,
+                    timestamp: timestamp,
+                    from: transaction.from,
+                    to: transaction.to,
+                    value: transaction.value,
+                    gasLimit: transaction.gasLimit,
+                    gasUsed: transactionReceipt.gasUsed,
+                    gasPrice: transaction.gasPrice,
+                    txtFee: txtFee,
+                    nonce: transaction.nonce,
+                    data: transaction.input,
+                    isContractCreation: isContractCreation,
+                    isErc20Token: false
+                };
+                if (!isContractCreation) {
+                    return db.transactionDb.put(transaction.hash, JSON.stringify(newTransaction));
+                }
+                //call token details function to update token details
+                return checkAndUpdateErc20(db, transactionReceipt.contractAddress, (token) => {
+                    if (!token)
+                        return db.transactionDb.put(transaction.hash, JSON.stringify(newTransaction));
+                    newTransaction.isErc20Token = true;
+                    return db.transactionDb.put(transaction.hash, JSON.stringify(newTransaction));
                 });
-
-            let gasPrice = transaction.gasPrice;
-            let txtFee = gasPrice * transactionReceipt.gasUsed;
-
-            let isContractCreation = false;
-
-            if (transactionReceipt.contractAddress && !transaction.to) {
-                transaction.to = transactionReceipt.contractAddress;
-                isContractCreation = true;
-            }
-            let newTransaction = new Transaction({
-                hash: transaction.hash,
-                blockNumber: transaction.blockNumber,
-                transactionIndex: transaction.transactionIndex,
-                timestamp: timestamp,
-                from: transaction.from,
-                to: transaction.to,
-                value: transaction.value,
-                gasLimit: transaction.gasLimit,
-                gasUsed: transactionReceipt.gasUsed,
-                gasPrice: transaction.gasPrice,
-                txtFee: txtFee,
-                nonce: transaction.nonce,
-                data: transaction.input,
-                isContractCreation: isContractCreation,
-            });
-            if (!isContractCreation) {
-                return newTransaction.save();
-            }
-            //call token details function to update token details
-            getTokenDetails(transactionReceipt.contractAddress, (error, token) => {
-                if (error)
-                    return newTransaction.save();
-
-                newTransaction.isErc20Token = true;
-                newTransaction.token = token;
-                return newTransaction.save();
-            });
-        }).then((result) => {
-            next()
-        }).catch((error) => {
+            })
+            .then(() => {
+                return projectUtils.findAndUpdateLvDb(transaction.from, transaction.hash, db.accountDb);
+            })
+            .then(() => {
+                return projectUtils.findAndUpdateLvDb(transaction.to, transaction.hash, db.accountDb);
+            })
+            .then(() => {
+                next()
+            }).catch((error) => {
             console.log("Error while getting transaction receipt: ");
             console.log(error);
             next();
@@ -209,8 +235,8 @@ let customWeb3GetBlock = (blockNumber) => {
 };
 
 // cron function to get transaction from every blocks
-let getTransactions = () => {
-    latestBlockNumber(function (blockNumber) {
+let getTransactions = (db) => {
+    latestBlockNumber(db, function (blockNumber) {
 
         //get all transaction details of this block with transaction details
         customWeb3GetBlock(blockNumber)
@@ -221,38 +247,38 @@ let getTransactions = () => {
                 if (!block.transactions.length)
                     throw 'Block has no transaction';
 
-                getTransactionFromBlock(block, () => {
+                getTransactionFromBlock(db, block, () => {
                     blockNumber++;
-                    updateLastBlockNumber(blockNumber, (err) => {
+                    updateLastBlockNumber(db, blockNumber, (err) => {
                         if (err)
                             console.log(err);
-                        getTransactions();
+                        getTransactions(db);
                     });
                 });
 
             })
             .catch((error) => {
                 if (error === 'Web3 Timeout')
-                    return getTransactions();
+                    return getTransactions(db);
 
                 if (error === 'No Block found')
                     return setTimeout(function () {
-                        getTransactions();
+                        getTransactions(db);
                         console.log("Block number " + blockNumber + " not found retry....");
                     }, 10000);
 
                 if (error === 'Block has no transaction') {
                     blockNumber++;
-                    return updateLastBlockNumber(blockNumber, (err) => {
+                    return updateLastBlockNumber(db, blockNumber, (err) => {
                         if (err)
                             console.log(err);
-                        getTransactions();
+                        getTransactions(db);
                     })
                 }
                 console.log("Get block details error: ");
                 console.log(error);
                 setTimeout(function () {
-                    getTransactions();
+                    getTransactions(db);
                 }, 10000);
             });
     });

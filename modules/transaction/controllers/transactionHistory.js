@@ -1,13 +1,10 @@
 /**
  * Created by Tauseef Naqvi on 05-12-2017.
  */
-let ethers = require('ethers');
-let utils = ethers.utils;
-let Transaction = require('../../../models/transactionModel');
-let TokenTransaction = require('../../../models/tokenTransactionModel');
-let projectUtils = require('./../../../projectUtils');
+const projectUtils = require('./../../../projectUtils');
 
-let transactionHistory = (req, res) => {
+const transactionHistory = (req, res) => {
+    const db = req.db;
     let address = req.params.address;
     let pageNumber = req.params.pageNumber;
 
@@ -26,72 +23,47 @@ let transactionHistory = (req, res) => {
 
     let limit = 50;
     let skip = limit * (pageNumber - 1);
+    let transactions = [];
 
+    projectUtils.findLvDb(address, db.accountDb)
+        .then((transactionsHash) => {
+            if (!transactionsHash)
+                throw Error("noTransactionsFound");
 
-    let select = 'hash blockNumber timestamp from to isContractCreation value txtFee isErc20Token token';
+            transactionsHash = transactionsHash.split(',');
 
-    //find 'from' or 'to' transactions of address
-    Transaction.find({$or: [{from: address}, {to: address}]}).select(select).sort({'timestamp': -1}).skip(skip).limit(limit).lean()
-        .then((transactions) => {
-            res.json({success: true, transactions: transactions});
-        })
-        .catch((error) => {
-            res.json({success: false, msg: "Error while getting transactions.", error: error.message});
-        });
+            if (transactionsHash.length < limit)
+                limit = transactionsHash.length;
 
-    /*
-    let allTransactions = [];
+            limit = skip + limit;
 
-    //find 'from' transactions of address
-    Transaction.find({from: address}).select(select).lean()
-        .then((fromTransactions) => {
-            if (!fromTransactions.length)
-                return "No transaction in from";
-            //type:out inject in 'from' all transactions
-            return projectUtils.injectKeyValueInArray(fromTransactions, {type: 'out', isPending: false})
-        })
-        .then((outTransactions) => {
-            if (outTransactions !== "No transaction in from")
-                allTransactions = outTransactions;
-            //find 'to' transactions of address
-            return Transaction.find({to: address}).select(select).lean();
-        })
-        .then((toTransactions) => {
-            if (!toTransactions.length) {
-                // sort transactions in descending order of timestamp
-                if (allTransactions.length)
-                    allTransactions = allTransactions.sort(function (a, b) {
-                        return new Date(b.timestamp) - new Date(a.timestamp);
-                    });
+            if (limit > transactionsHash.length)
+                return res.json({
+                    success: false,
+                    msg: "No transactions found for " + address + " at page no " + pageNumber + "."
+                });
 
-                //skip and limit on array
-                allTransactions = allTransactions.slice(skip,skip+limit);
-
-                res.json({success: true, transactions: allTransactions});
-                throw 'Returned';
+            for (let i = skip; i < limit; i++) {
+                projectUtils.findLvDb(transactionsHash[i], db.transactionDb)
+                    .then((transaction) => {
+                        if (transaction)
+                            transactions.push(JSON.parse(transaction));
+                        if (i + 1 === limit)
+                            res.json({
+                                success: true,
+                                transactions: transactions,
+                                transactionsCount: transactionsHash.length
+                            });
+                    })
             }
-            //type:in inject in 'to' all transactions
-            return projectUtils.injectKeyValueInArray(toTransactions, {type: 'in', isPending: false})
         })
-        .then((inTransactions) => {
-            allTransactions = allTransactions.concat(inTransactions);
-            // sort transactions in descending order of timestamp
-            allTransactions = allTransactions.sort(function (a, b) {
-                return new Date(b.timestamp) - new Date(a.timestamp);
-            });
-
-            //skip and limit on array
-            allTransactions = allTransactions.slice(skip,skip+limit);
-
-            return res.json({success: true, transactions: allTransactions});
-        })
-        .catch((error) => {
-            if (error !== 'Returned')
-                return res.json({success: false, msg: "Error while getting transactions.", error: error.message});
-        });*/
+        .catch((err) => {
+            if (err.message === "noTransactionsFound")
+                res.json({success: false, msg: "No transactions found on address " + address});
+        });
 };
 
-let tokenTransactionHistory = (req, res) => {
+const tokenTransactionHistory = (req, res) => {
     let address = req.params.address;
     let pageNumber = req.params.pageNumber;
 
@@ -110,18 +82,48 @@ let tokenTransactionHistory = (req, res) => {
 
     let limit = 50;
     let skip = limit * (pageNumber - 1);
+    let transactions = [];
 
-    //find 'from' or 'to' transactions of address
-    TokenTransaction.find({$or: [{from: address}, {to: address}]}).sort({'timestamp': -1}).skip(skip).limit(limit).lean()
-        .then((transactions) => {
-            res.json({success: true, transactions: transactions});
+    projectUtils.findLvDb(address, db.tokenAccountDb)
+        .then((transactionsHash) => {
+            if (!transactionsHash)
+                throw Error("noTransactionsFound");
+
+            transactionsHash = transactionsHash.split(',');
+
+            if (transactionsHash.length < limit)
+                limit = transactionsHash.length;
+
+            limit = skip + limit;
+
+            if (limit > transactionsHash.length)
+                return res.json({
+                    success: false,
+                    msg: "No transactions found for " + address + " at page no " + pageNumber + "."
+                });
+
+            for (let i = skip; i < limit; i++) {
+                projectUtils.findLvDb(transactionsHash[i], db.transactionDb)
+                    .then((transaction) => {
+                        if (transaction)
+                            transactions.push(JSON.parse(transaction));
+                        if (i + 1 === limit)
+                            res.json({
+                                success: true,
+                                transactions: transactions,
+                                transactionsCount: transactionsHash.length
+                            });
+                    })
+            }
         })
-        .catch((error) => {
-            res.json({success: false, msg: "Error while getting transactions.", error: error.message});
+        .catch((err) => {
+            if (err.message === "noTransactionsFound")
+                res.json({success: false, msg: "No transactions found on address " + address});
         });
 };
 
-let accountTransactionCount = (req, res) => {
+const accountTransactionCount = (req, res) => {
+    const db = req.db;
     let address = req.params.address;
 
     if (!address)
@@ -135,19 +137,25 @@ let accountTransactionCount = (req, res) => {
     }
 
     let transactionCount = 0;
+    let tokenTransactionCount = 0;
 
     // get transaction count of particular address in token and transaction db
-    Transaction.count({$or: [{from: address}, {to: address}]})
-        .then((allTransactionCount) => {
-            transactionCount = allTransactionCount;
-            return TokenTransaction.count({$or: [{from: address}, {to: address}]});
+    projectUtils.findLvDb(address, db.accountDb)
+        .then((transactions) => {
+            if (transactions) {
+                transactions = transactions.split(',');
+                transactionCount = transactions.length;
+            }
         })
-        .then((tokenTransactionCount) => {
-            tokenTransactionCount;
+        .then((tokenTransaction) => {
+            if (tokenTransaction) {
+                tokenTransaction = tokenTransaction.split(',');
+                tokenTransactionCount = tokenTransaction.length;
+            }
             res.json({success: true, transactionCount, tokenTransactionCount});
         })
-        .catch((error) => {
-            return res.json({success: false, msg: "Error while getting transaction count.", error: error.message});
+        .catch((err) => {
+            return res.json({success: false, msg: "Error while getting transaction count.", error: err.message});
         });
 };
 

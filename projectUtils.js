@@ -219,7 +219,7 @@ module.exports.getPendingTransactions = (address, isToken, callback) => {
             callback(null, transactions);
         });
     }).catch((err) => {
-        console.log("error(catch) in web3.eth.getBlock:- ")
+        console.log("error(catch) in web3.eth.getBlock:- ");
         console.log(err);
         callback(err)
     });
@@ -244,5 +244,38 @@ module.exports.injectKeyValueInArray = (array, keyValues) => {
                 return reject(err);
             resolve(newArray);
         })
+    })
+};
+
+module.exports.findLvDb = findLvDb = (key, db) => {
+    return new Promise((resolve, reject) => {
+        db.get(key)
+            .then((_value) => {
+                resolve(_value.toString('utf8'))
+            })
+            .catch((err) => {
+                if (err.message.indexOf('Key not found in database') !== -1) {
+                    resolve(false)
+                }
+                reject(err)
+            })
+    })
+};
+
+module.exports.findAndUpdateLvDb = (key, value, db) => {
+    return new Promise((resolve, reject) => {
+        findLvDb(key, db)
+            .then((_value) => {
+                if (_value && _value.indexOf(value) !== -1) {
+                    resolve();
+                } else if (_value) {
+                    db.put(key, value + ',' + _value);
+                    resolve();
+                } else {
+                    db.put(key, value);
+                    resolve()
+                }
+            })
+            .catch(reject)
     })
 };
