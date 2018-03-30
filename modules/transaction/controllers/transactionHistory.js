@@ -1,6 +1,9 @@
 /**
  * Created by Tauseef Naqvi on 05-12-2017.
  */
+const ethers = require('ethers');
+const utils = ethers.utils;
+
 const projectUtils = require('./../../../projectUtils');
 
 const transactionHistory = (req, res) => {
