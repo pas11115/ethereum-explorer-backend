@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "preinstall": "mkdir levelDbData"
+    "preinstall": "[ -d 'levelDbData' ] || mkdir levelDbData",
+    "rootinstall":"sudo npm install --unsafe-perm=true --allow-root"
   },
   "dependencies": {
     "async": "^2.6.0",
