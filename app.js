@@ -27,12 +27,13 @@ const levelUp = require('levelup');
 const levelDown = require('leveldown');
 
 // 1) Create our store
-const configDb = levelUp(levelDown('./levelDbData/configs'));
-const transactionDb = levelUp(levelDown('./levelDbData/transactions'));
-const accountDb = levelUp(levelDown('./levelDbData/accounts'));
-const erc20TokenDb = levelUp(levelDown('./levelDbData/erc20-tokens'));
-const tokenTransactionDb = levelUp(levelDown('./levelDbData/token-transactions'));
-const tokenAccountDb = levelUp(levelDown('./levelDbData/token-accounts'));
+const dbPath = './levelDbData';
+const configDb = levelUp(levelDown(dbPath + '/configs'));
+const transactionDb = levelUp(levelDown(dbPath + '/transactions'));
+const accountDb = levelUp(levelDown(dbPath + '/accounts'));
+const erc20TokenDb = levelUp(levelDown(dbPath + '/erc20-tokens'));
+const tokenTransactionDb = levelUp(levelDown(dbPath + '/token-transactions'));
+const tokenAccountDb = levelUp(levelDown(dbPath + '/token-accounts'));
 let db = {configDb, transactionDb, accountDb, erc20TokenDb, tokenTransactionDb, tokenAccountDb};
 
 //Mongoose Setup

@@ -2,7 +2,7 @@ const levelUp = require('levelup');
 const levelDown = require('leveldown');
 
 // 1) Create our store
-const db = levelUp(levelDown('./mydb'));
+const db = levelUp(levelDown('/mydb'));
 const configDb = levelUp(levelDown('./levelDbData/configs'));
 return configDb.get("latestBlockNumber",function (err,res) {
     if(err)
