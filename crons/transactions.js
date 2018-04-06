@@ -6,16 +6,15 @@ let web3 = require('web3');
 web3 = new web3(new web3.providers.HttpProvider(config.rpcUrl));
 const ethers = require('ethers');
 const async = require('async');
-const InputDataDecoder = require('ethereum-input-data-decoder');
+const InputDataDecoder = require('input-data-decoder-ethereum');
 const projectUtils = require('./../projectUtils');
 const providers = ethers.providers;
 const utils = ethers.utils;
-const network = providers.networks.ropsten;
 const decoder = new InputDataDecoder(projectUtils.abi);
 
 // let provider = new providers.JsonRpcProvider(config.rpcUrl,{chainId: 1});
 //change network for other chainId
-let provider = new providers.JsonRpcProvider(config.rpcUrl, network);
+let provider = new providers.JsonRpcProvider(config.rpcUrl);
 
 //update last block number in db
 let updateLastBlockNumber = (db, latestBlockNumber, callback) => {
@@ -42,30 +41,28 @@ let latestBlockNumber = (db, cb) => {
 
 // check and find token details from contract address
 let checkAndUpdateErc20 = (db, contractAddress, callback) => {
-    // let contract = new ethers.Contract(contractAddress, projectUtils.abi, provider);
-    let contract = new web3.eth.Contract(projectUtils.abi, contractAddress);
+    let contract = new ethers.Contract(contractAddress, projectUtils.abi, provider);
 
     let token = {};
-    contract = contract.methods;
     //sample eth address to check contract have valid balanceOf function
-    contract.totalSupply().call()
+    contract.totalSupply()
         .then((totalSupply) => {
             if (totalSupply !== '0')
                 token.totalSupply = totalSupply;
-            return contract.balanceOf('0xCF4eE917014309655b1f4055861a45782403127d').call()
+            return contract.balanceOf('0xCF4eE917014309655b1f4055861a45782403127d')
         })
         .then(() => {
-            return contract.decimals().call();
+            return contract.decimals();
         })
         .then((decimals) => {
             if (decimals !== '0')
                 token.decimals = decimals;
-            return contract.name().call();
+            return contract.name();
         })
         .then((name) => {
             if (name !== '0')
                 token.name = name;
-            return contract.symbol().call();
+            return contract.symbol();
         })
         .then((symbol) => {
             if (symbol !== '0')
@@ -77,7 +74,10 @@ let checkAndUpdateErc20 = (db, contractAddress, callback) => {
             else callback(false)
         })
         .catch((err) => {
-            console.log(contractAddress +" - "+ err);
+            if (err.message !== "invalid bytes") {
+                console.log(err);
+                console.log(contractAddress + " - " + err);
+            }
             if (Object.keys(token).length) {
                 db.erc20TokenDb.put(contractAddress, JSON.stringify(token));
                 return callback(token);
@@ -227,10 +227,10 @@ let customWeb3GetBlock = (blockNumber) => {
 
         setTimeout(function () {
             if (!finished) {
+                console.log("Web3 not responding in 10 sec refresh at " + Date.now());
                 reject('Web3 Timeout');
             }
-        }, 1000);
-
+        }, 10000);
     })
 };
 

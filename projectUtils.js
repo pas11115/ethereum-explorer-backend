@@ -8,9 +8,10 @@ web3 = new web3(new web3.providers.HttpProvider(config.rpcUrl));
 const async = require('async');
 const ethers = require('ethers');
 const utils = ethers.utils;
-const InputDataDecoder = require('ethereum-input-data-decoder');
+const InputDataDecoder = require('input-data-decoder-ethereum');
 
-module.exports.abi = abi = [{
+module.exports.abi = abi = [
+    {
     "constant": true,
     "inputs": [],
     "name": "name",
@@ -129,11 +130,13 @@ module.exports.abi = abi = [{
     }, {"indexed": false, "name": "value", "type": "uint256"}],
     "name": "Transfer",
     "type": "event"
-}];
+}
+];
 
 
 const decoder = new InputDataDecoder(abi);
 
+//TODO: get pending transaction from tx pool
 module.exports.getPendingTransactions = (address, isToken, callback) => {
     address = address.toLowerCase();
     web3.eth.getBlock('pending', true).then((block) => {

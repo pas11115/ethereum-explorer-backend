@@ -74,7 +74,7 @@ router.use((req, res, next) => {
 // import our routers
 // ----------------------------------------------------
 router.use('/transaction', require('./modules/transaction/router'));
-router.use('/util', require('./modules/util/router'));
+router.use('/db-stats', require('./modules/db-stats/router'));
 
 // register our routers
 // -------------------------------
