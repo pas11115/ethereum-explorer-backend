@@ -1,7 +1,6 @@
 /**
  * Created by Tauseef Naqvi on 05-12-2017.
  */
-
 const projectUtils = require('./../../../projectUtils');
 
 const getDataCount = (db) => {

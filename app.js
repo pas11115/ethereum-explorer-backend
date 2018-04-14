@@ -6,12 +6,9 @@
 // import the packages we need
 const express = require('express');                   //import express module
 const bodyParser = require('body-parser');            //import bodyparser
-let mongoose = require('mongoose');                 //import mongoose
-mongoose.Promise = require('bluebird'); // set Promise provider to bluebird
 const app = express();                                //import express contractor
 const cors = require('cors');                         //import cors for cross domain requestconst config = require('./config');                   //import config
 const config = require('./config');
-const path = require('path');                         //import path
 const morgan = require('morgan');
 const transactionsCron = require('./crons/transactions');
 // configure cors
@@ -27,34 +24,13 @@ const levelUp = require('levelup');
 const levelDown = require('leveldown');
 
 // 1) Create our store
-const dbPath = './levelDbData';
-const configDb = levelUp(levelDown(dbPath + '/configs'));
-const transactionDb = levelUp(levelDown(dbPath + '/transactions'));
-const accountDb = levelUp(levelDown(dbPath + '/accounts'));
-const erc20TokenDb = levelUp(levelDown(dbPath + '/erc20-tokens'));
-const tokenTransactionDb = levelUp(levelDown(dbPath + '/token-transactions'));
-const tokenAccountDb = levelUp(levelDown(dbPath + '/token-accounts'));
+const configDb = levelUp(levelDown(config.dbPath + '/configs'));
+const transactionDb = levelUp(levelDown(config.dbPath + '/transactions'));
+const accountDb = levelUp(levelDown(config.dbPath + '/accounts'));
+const erc20TokenDb = levelUp(levelDown(config.dbPath + '/erc20-tokens'));
+const tokenTransactionDb = levelUp(levelDown(config.dbPath + '/token-transactions'));
+const tokenAccountDb = levelUp(levelDown(config.dbPath + '/token-accounts'));
 let db = {configDb, transactionDb, accountDb, erc20TokenDb, tokenTransactionDb, tokenAccountDb};
-
-//Mongoose Setup
-// =============================================================================
-// // Connect To Database
-// mongoose.connect(config.database, function (err) {
-//     if (err) {
-//         console.log('Database error: ' + err);
-//         mongoose.connect(config.database);
-//     }
-// });
-//
-// // On Connection
-// mongoose.connection.on('connected', () => {
-//     console.log('Database connected at ' + config.database);
-// });
-//
-// // On Error
-// mongoose.connection.on('error', (err) =>{
-//     console.log('Database error: ' + err);
-// });
 
 // ROUTES FOR OUR API
 // =============================================================================
@@ -63,8 +39,6 @@ const router = express.Router();
 
 // middleware to use for all requests
 router.use((req, res, next) => {
-    // var ipx = req.headers['x-real-ip'];
-    // do logging
 
     //pass database on every request call
     req.db = db;
@@ -90,5 +64,3 @@ app.listen(process.env.PORT || config.port, (err) => {
         console.log(err);
     console.log('Server running at port:' + config.port);
 });
-
-

@@ -1,9 +1,9 @@
 /**
  * Created by Tauseef Naqvi on 05-12-2017.
  */
-let express = require("express");
-let router = express.Router();
-let dbStats = require('./controllers/db-stats');
+const express = require("express");
+const router = express.Router();
+const dbStats = require('./controllers/db-stats');
 
 router.route('^/block$').get(dbStats.latestBlockNumber);
 router.route('^/transaction$').get(dbStats.transactionCount);

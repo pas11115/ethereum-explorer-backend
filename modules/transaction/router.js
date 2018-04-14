@@ -1,9 +1,9 @@
 /**
  * Created by Tauseef Naqvi on 05-12-2017.
  */
-let express = require("express");
-let router = express.Router();
-let transactionHistory = require('./controllers/transactionHistory');
+const express = require("express");
+const router = express.Router();
+const transactionHistory = require('./controllers/transactionHistory');
 
 //get api to get all transactions of a address
 router.route('^/transactionHistory/:address/:pageNumber$').get(transactionHistory.transactionHistory);

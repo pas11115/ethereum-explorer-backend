@@ -1,7 +1,8 @@
 {
-  "name": "blockchain-explorer-backend",
-  "version": "1.0.0",
-  "description": "blockchain explorer backend",
+  "name": "ethereum-explorer-backend",
+  "private": false,
+  "version": "0.0.1",
+  "description": "A lightweight ethereum block explorer backend",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -21,6 +22,23 @@
     "morgan": "^1.9.0",
     "web3": "^1.0.0-beta.26"
   },
-  "author": "Sayed Tauseef Naqvi",
-  "license": "ISC"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/karachain/ethereum-explorer-backend"
+  },
+  "bugs": {
+    "url": "https://github.com/karachain/ethereum-explorer-backend/issues"
+  },
+  "homepage": "https://github.com/karachain/ethereum-explorer-backend",
+  "author": "Sayed Tauseef Naqvi <tauseef.naqvi786@gmail.com>",
+  "license": "MIT",
+  "keywords": [
+    "ethereum",
+    "blockchain",
+    "explorer",
+    "blocks",
+    "address",
+    "transactions",
+    "transaction"
+  ]
 }
